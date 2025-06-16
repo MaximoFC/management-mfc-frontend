@@ -1,10 +1,11 @@
 import './App.css'
+import Login from './pages/Login'
 
 function App() {
 
   return (
     <>
-      <h1>MFC</h1>
+      <Login />
     </>
   )
 }
