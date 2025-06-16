@@ -11,9 +11,11 @@ function Login() {
         try {
             const res = await loginEmployee(name, password);
             localStorage.setItem('token', res.token);
+            localStorage.setItem('employee', JSON.stringify(res.employee));
             console.log('Successful login', res.employee);
-            //redirect
+            //La redirección iría acá
             alert("Iniciaste sesión")
+            //Añadir limpieza del formulario cuando todo esté funcional
         } catch (error) {
             setError(error.message || 'Login error');
         }
@@ -25,7 +27,7 @@ function Login() {
                 onSubmit={handleSubmit}
                 className="flex flex-col justify-center gap-4 border-1 border-black rounded-xl p-6"
             >
-                <h2 className="">Login</h2>
+                <h2>Login</h2>
                 <input 
                     type="text" 
                     placeholder="Nombre"
@@ -49,7 +51,7 @@ function Login() {
                     Ingresar
                 </button>
             </form>
-            {error && <p>{error}</p>}
+            {error && <p className="text-red-500">{error}</p>}
         </div>
     )
 }
