@@ -1,4 +1,3 @@
-import './App.css';
 import Login from './pages/Login';
 import StockEntryForm from './pages/StockEntryForm';
 import StockList from './pages/StockList';

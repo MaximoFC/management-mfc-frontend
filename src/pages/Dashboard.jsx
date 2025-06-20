@@ -1,7 +1,11 @@
+import Navbar from "../components/Navbar";
+
 const Dashboard = () => {
     return (
-        <div className="flex flex-col bg-gray-100 p-8 gap-6">
-            <div className="flex flex-col gap-2 bg-red-100 rounded-xl border-1 border-red-200 p-6">
+        <div>
+            <Navbar />
+            <div className="flex flex-col bg-gray-100 p-8 gap-6">
+                <div className="flex flex-col gap-2 bg-red-100 rounded-xl border-1 border-red-200 p-6">
                 <h2 className="text-xl font-semibold text-red-600">Alertas importantes</h2>
                 <p>Cadenas Shimano - Stock bajo</p>
                 <p>Giant Hybrid pendiente de retiro</p>
@@ -52,6 +56,7 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
+            </div>
         </div>
     )
 }
