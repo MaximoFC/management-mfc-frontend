@@ -13,3 +13,12 @@ export const loginEmployee = async (name, password) => {
         throw new Error(error.response?.data?.error || 'Login error');
     }
 };
+
+export const getToken = () => {
+    return localStorage.getItem('token');
+};
+
+export const getCurrentEmployee = () => {
+    const employee = localStorage.getItem('employee');
+    return employee ? JSON.parse(employee) : null
+};

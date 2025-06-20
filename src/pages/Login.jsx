@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { loginEmployee } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -13,7 +15,7 @@ function Login() {
             localStorage.setItem('token', res.token);
             localStorage.setItem('employee', JSON.stringify(res.employee));
             console.log('Successful login', res.employee);
-            //La redirección iría acá
+            navigate('/dashboard');
             alert("Iniciaste sesión")
             //Añadir limpieza del formulario cuando todo esté funcional
         } catch (error) {
