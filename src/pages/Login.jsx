@@ -1,22 +1,21 @@
 import { useState } from "react";
 import { loginEmployee } from "../services/authService";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '../context/AuthContext';
 
 function Login() {
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const res = await loginEmployee(name, password);
-            localStorage.setItem('token', res.token);
-            localStorage.setItem('employee', JSON.stringify(res.employee));
-            console.log('Successful login', res.employee);
+            login(res.employee, res.token);
             navigate('/dashboard');
-            alert("Iniciaste sesión")
             //Añadir limpieza del formulario cuando todo esté funcional
         } catch (error) {
             setError(error.message || 'Login error');
