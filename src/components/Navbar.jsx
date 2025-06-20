@@ -5,7 +5,7 @@ import { IoPersonOutline } from "react-icons/io5";
 
 const Navbar = () => {
     return (
-        <nav className="flex justify-between items-center h-25 p-4 w-full">
+        <nav className="flex justify-between items-center h-25 p-4 w-full border-b-1 border-gray-300">
             <div className="flex items-center gap-4">
                 <img src={Logo} alt="Logo de MFC" className="w-15 h-15 rounded-xl" />
             </div>
