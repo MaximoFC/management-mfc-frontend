@@ -25,8 +25,25 @@ const StockList = () => {
     return (
         <Layout>
             <div className="p-8 flex flex-col gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="border-1 border-gray-300 rounded-md py-2 px-6 bg-white">
+                        <h2>Stock bajo</h2>
+                        <p className="text-xl font-bold text-orange-500">5</p>
+                        <p className="text-gray-600 text-sm">Requieren reposición</p>
+                    </div>
+                    <div className="border-1 border-gray-300 rounded-md py-2 px-6 bg-white">
+                        <h2>Sin stock</h2>
+                        <p className="text-xl font-bold text-red-500">0</p>
+                        <p className="text-gray-600 text-sm">Agotados</p>
+                    </div>
+                    <div className="border-1 border-gray-300 rounded-md py-2 px-6 bg-white">
+                        <h2>Valor total</h2>
+                        <p className="text-xl font-bold text-green-500">$400.000</p>
+                        <p className="text-gray-600 text-sm">Inventario actual</p>
+                    </div>
+                </div>
+                
                 <div className="flex flex-col items-start gap-2">
-                    <h2 className="text-4xl">Inventario</h2>
                     <Link 
                         to="/repuestos/nuevo"
                         className="border-1 border-green-500 p-2 rounded-xl cursor-pointer hover:bg-green-500 hover:text-white"
