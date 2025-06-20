@@ -3,6 +3,7 @@ import StockEntryForm from './pages/StockEntryForm';
 import StockList from './pages/StockList';
 import Dashboard from './pages/Dashboard';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
 
@@ -10,9 +11,32 @@ function App() {
     <Routes>
       <Route path='/' element={<Navigate to="/login" />} />
       <Route path='/login' element={<Login />} />
-      <Route path='/repuestos/nuevo' element={<StockEntryForm />} />
-      <Route path='/repuestos' element={<StockList />} />
-      <Route path='/dashboard' element={<Dashboard />} />
+
+      {/* Rutas protegidas */}
+      <Route
+        path='/repuestos/nuevo'
+        element={
+          <ProtectedRoute>
+            <StockEntryForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/repuestos'
+        element={
+          <ProtectedRoute>
+            <StockList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/dashboard'
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
