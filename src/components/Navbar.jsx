@@ -9,11 +9,18 @@ const Navbar = () => {
     const { employee, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef(null);
+    const avatarRef = useRef(null);
+
     const initials = employee?.name?.slice(0, 2).toUpperCase() || 'US';
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
+            if (
+                menuRef.current && 
+                !menuRef.current.contains(e.target) &&
+                avatarRef.current &&
+                !avatarRef.current.contains(e.target)
+            ) {
                 setIsMenuOpen(false);
             }
         };
@@ -39,8 +46,9 @@ const Navbar = () => {
                     <IoIosNotificationsOutline className="h-7 w-7" />
                 </button>
                 <button
+                    ref={avatarRef}
                     className="flex justify-center cursor-pointer p-2 w-11 border-1 border-gray-500 rounded-full hover:bg-gray-200"
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    onClick={() => setIsMenuOpen(prev => !prev)}
                 >
                     {initials}
                 </button>
