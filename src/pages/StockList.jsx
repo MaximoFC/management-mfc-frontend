@@ -117,7 +117,7 @@ const StockList = () => {
                             } else if (r.stock <= 5) {
                                 status = 'Bajo stock';
                                 statusColor = 'text-orange-500';
-                            } else if (r.stock <= 15) {
+                            } else if (r.stock <= 10) {
                                 status = 'Stock medio';
                                 statusColor = 'text-yellow-600';
                             }
@@ -136,12 +136,12 @@ const StockList = () => {
                                     <td className="px-4 py-2">${r.price}</td>
                                     <td className={`px-4 py-2 font-semibold ${statusColor}`}>{status}</td>
                                     <td className="flex p-4 gap-2 items-center justify-center">
-                                        <button className="hover:text-gray-600 cursor-pointer">
+                                        <Link to={`/repuestos/editar/${r._id}`} className="hover:text-gray-600 cursor-pointer">
                                             <FaRegEdit className="w-6 h-6" />
-                                        </button>
-                                        <button className="hover:text-gray-600 cursor-pointer">
+                                        </Link>
+                                        <Link to={`/repuestos/reponer/${r._id}`} className="hover:text-gray-600 cursor-pointer">
                                             <IoMdAddCircleOutline className="w-6 h-6" />
-                                        </button>
+                                        </Link>
                                         <button 
                                             className="text-red-500 hover:text-red-700 cursor-pointer"
                                             onClick={() => handleDelete(r._id)}

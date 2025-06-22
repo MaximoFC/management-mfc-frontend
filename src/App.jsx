@@ -4,6 +4,8 @@ import StockList from './pages/StockList';
 import Dashboard from './pages/Dashboard';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import EditSpare from './pages/EditSpare';
+import ReplenishStock from './pages/ReplenishStock';
 
 function App() {
 
@@ -34,6 +36,22 @@ function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/repuestos/editar/:id'
+        element={
+          <ProtectedRoute>
+            <EditSpare />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/repuestos/reponer/:id'
+        element={
+          <ProtectedRoute>
+            <ReplenishStock />
           </ProtectedRoute>
         }
       />
