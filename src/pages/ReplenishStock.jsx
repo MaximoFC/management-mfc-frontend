@@ -17,6 +17,13 @@ const ReplenishStock = () => {
         const updatedStock = Number(spare.stock) + Number(data.stock);
         try {
             await axios.put(`http://localhost:4000/api/bikeparts/${id}`, { ...spare, stock: updatedStock });
+
+            await axios.post('http://localhost:4000/api/cash/flow', {
+                type: 'egreso',
+                amount: Number(data.stock) * Number(data.amount),
+                description: `Reposición de stock: ${spare.description}`
+            })
+            
             navigate('/repuestos');
         } catch (err) {
             alert("Error updating spare: ", err);
