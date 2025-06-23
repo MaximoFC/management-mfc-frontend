@@ -21,16 +21,16 @@ const Sidebar = () => {
             <Link to="/clientes" className={linkClasses("/clientes")}>
                 <GoPeople className="w-6 h-6" /> Clientes
             </Link>
-            <Link to="trabajos" className={linkClasses("/trabajos")}>
+            <Link to="/trabajos" className={linkClasses("/trabajos")}>
                 <GoTools className="w-6 h-6" /> Trabajos
             </Link>
-            <Link to="presupuestos" className={linkClasses("/presupuestos")}>
+            <Link to="/presupuestos" className={linkClasses("/presupuestos")}>
                 <GrDocumentText className="w-6 h-6" /> Presupuestos
             </Link>
             <Link to="/repuestos" className={linkClasses("/repuestos")}>
                 <BsBox2 className="w-6 h-6" /> Inventario
             </Link>
-            <Link to="caja" className={linkClasses("/caja")}>
+            <Link to="/caja" className={linkClasses("/caja")}>
                 <MdOutlineAttachMoney className="w-6 h-6" /> Caja
             </Link>
         </div>

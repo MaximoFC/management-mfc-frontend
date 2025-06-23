@@ -6,6 +6,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import EditSpare from './pages/EditSpare';
 import ReplenishStock from './pages/ReplenishStock';
+import Cash from './pages/Cash';
 
 function App() {
 
@@ -52,6 +53,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ReplenishStock />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/caja'
+        element={
+          <ProtectedRoute>
+            <Cash />
           </ProtectedRoute>
         }
       />
