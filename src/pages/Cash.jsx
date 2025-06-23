@@ -60,12 +60,18 @@ const Cash = () => {
                     movDate.toDateString() === now.toDateString()
                 );
             } else if (filter === 'week') {
-                const startOfWeek = new Date(now);
-                const day = now.getDay();
-                const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-                startOfWeek.setDate(diff);
-                startOfWeek.setHours(0, 0, 0, 0);
-                return movDate >= startOfWeek && movDate <= now;
+                const pastWeek = new Date(now);
+                pastWeek.setDate(now.getDate() - 6);
+
+                pastWeek.setHours(0, 0, 0, 0);
+                const endOfToday = new Date(now);
+                endOfToday.setHours(23, 59, 59, 999);
+
+                const yesterday = new Date(now);
+                yesterday.setDate(now.getDate() - 1 );
+                yesterday.setHours(23, 59, 59, 999);
+
+                return movDate >= pastWeek && movDate <= yesterday;
             } else if (filter === 'month') {
                 return (
                     movDate.getMonth() === now.getMonth() &&
