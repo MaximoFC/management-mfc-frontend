@@ -6,9 +6,10 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
         type: '',
         brand: '',
         description: '',
-        stock: '',
         price: '',
-        ...initialData
+        ...initialData,
+        amount: '',
+        stock: mode === 'replenish' ? '': initialData.stock || '',
     });
 
     const handleChange = (e) => {
@@ -18,7 +19,12 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSubmit({ ...form, stock: Number(form.stock), price: Number(form.price) });
+        onSubmit({
+            ...form, 
+            stock: Number(form.stock), 
+            price: Number(form.price),
+            amount: Number(form.amount)
+        });
     };
 
     return (
@@ -110,21 +116,37 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                             required
                         />
                     </div>
+                    {(mode !== 'update') && (
+                    <div className="flex flex-col">
+                        <label htmlFor="amount">Precio unitario (compra) *</label>
+                        <input
+                            type="number"
+                            className="border-1 border-gray-300 rounded-md p-2"
+                            name="amount"
+                            id="amount"
+                            placeholder="Costo por unidad"
+                            value={form.amount || ''}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+                )}
                 </div>
-                    {(mode !== 'replenish') && (
-                        <div className="flex flex-col">
-                            <label htmlFor="description">Descripción *</label>
-                            <textarea
-                                className="border-1 border-gray-300 rounded-md p-2"
-                                name="description"
-                                id="description"
-                                placeholder="Descripción"
-                                value={form.description}
-                                onChange={handleChange}
-                                required
-                            />
-                        </div>
-                    )}
+
+                {(mode !== 'replenish') && (
+                    <div className="flex flex-col">
+                        <label htmlFor="description">Descripción *</label>
+                        <textarea
+                            className="border-1 border-gray-300 rounded-md p-2"
+                            name="description"
+                            id="description"
+                            placeholder="Descripción"
+                            value={form.description}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+                )}
 
                 <button className="rounded-md bg-red-500 text-white cursor-pointer p-2 hover:bg-red-700">
                     {mode === 'update' ? 'Guardar cambios' : mode === 'replenish' ? 'Reponer stock' : 'Agregar repuesto'}

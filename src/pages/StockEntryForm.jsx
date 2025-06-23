@@ -8,6 +8,13 @@ const StockEntryForm = () => {
     const handleCreate = async (data) => {
         try {
             await axios.post('http://localhost:4000/api/bikeparts', data);
+
+            await axios.post('http://localhost:4000/api/cash/flow', {
+                type: 'egreso',
+                amount: Number(data.stock) * Number(data.amount),
+                description: `Compra de nuevo repuesto: ${data.description}`
+            })
+            
             navigate('/repuestos');
         } catch (err) {
             alert("Error creating spare: ", err);
