@@ -4,14 +4,22 @@ import { IoIosNotificationsOutline } from "react-icons/io";
 import { IoPersonOutline } from "react-icons/io5";
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useRef } from "react";
+import { useSearch } from '../context/SearchContext';
 
 const Navbar = () => {
     const { employee, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef(null);
     const avatarRef = useRef(null);
+    const { searchTerm, setSearchTerm, onSearch, searchPlaceHolder } = useSearch();
 
     const initials = employee?.name?.slice(0, 2).toUpperCase() || 'US';
+
+    const handleChange = (e) => {
+        const term = e.target.value;
+        setSearchTerm(term);
+        if (onSearch) onSearch(term);
+    };
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -37,8 +45,10 @@ const Navbar = () => {
             <div className="w-1/2">
                 <input
                     type="text"
-                    placeholder="Buscar cliente, trabajo o repuesto"
+                    placeholder={searchPlaceHolder}
                     className="border-1 border-gray-300 rounded-xl p-2 w-full"
+                    value={searchTerm}
+                    onChange={handleChange}
                 />
             </div>
             <div className="flex gap-4 relative">
