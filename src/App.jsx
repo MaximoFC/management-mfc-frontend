@@ -7,6 +7,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import EditSpare from './pages/EditSpare';
 import ReplenishStock from './pages/ReplenishStock';
 import Cash from './pages/Cash';
+import Budget from './pages/Budget';
+import WorkList from './pages/WorkList';
+import ClientList from './pages/ClientsList';
 
 function App() {
 
@@ -61,6 +64,30 @@ function App() {
         element={
           <ProtectedRoute>
             <Cash />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/presupuestos'
+        element={
+          <ProtectedRoute>
+            <Budget />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/trabajos'
+        element={
+          <ProtectedRoute>
+            <WorkList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/clientes'
+        element={
+          <ProtectedRoute>
+            <ClientList />
           </ProtectedRoute>
         }
       />
