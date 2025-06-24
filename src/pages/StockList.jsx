@@ -93,7 +93,7 @@ const StockList = () => {
 
                 <div className="flex gap-4">
                     <select
-                        className="border-1 border-gray-300 rounded-md w-full bg-white p-2"
+                        className="border-1 border-gray-300 rounded-md w-full bg-white p-2 cursor-pointer"
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                     >

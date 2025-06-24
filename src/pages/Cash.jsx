@@ -141,7 +141,7 @@ const Cash = () => {
                         <div className="w-1/3 p-6 border-1 border-gray-300 bg-white rounded-md">
                             <div className="flex justify-between items-center">
                                 <h3>Egresos {filterLabels[filter]}</h3>
-                                <IoArrowDownCircleOutline className="text-green-500 w-6 h-6" />
+                                <IoArrowDownCircleOutline className="text-red-500 w-6 h-6" />
                             </div>
                             <p className="text-2xl text-red-500 font-bold">${totalExpenses}</p>
                             <p className="text-gray-500">{expenses.length} movimiento/s</p>
