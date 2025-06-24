@@ -5,11 +5,12 @@ import Layout from "../components/Layout";
 import { AiOutlineDelete } from "react-icons/ai";
 import { FaRegEdit } from "react-icons/fa";
 import { IoMdAddCircleOutline } from "react-icons/io";
+import { useSearch } from "../context/SearchContext";
 
 const StockList = () => {
     const [spare, setSpare] = useState([]);
     const [filter, setFilter] = useState('');
-    const [find, setFind] = useState('');
+    const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } = useSearch();
 
     useEffect(() => {
         axios.get('http://localhost:4000/api/bikeparts')
@@ -17,13 +18,31 @@ const StockList = () => {
             .catch(() => setSpare([]));
     }, []);
 
-    const filteredSpares = spare.filter((r) => 
-        r.type?.toLowerCase().includes(filter.toLowerCase()) && 
-        (
-            r.description?.toLowerCase().includes(find.toLowerCase()) ||
-            r.code?.toLowerCase().includes(find.toLowerCase())
-        )
-    );
+    useEffect(() => {
+        setSearchPlaceholder("Buscar repuesto por descripción o código");
+        
+        setOnSearch(() => (term) => {
+            setSearchTerm(term);
+        });
+    
+        return () => {
+            setSearchPlaceholder("Buscar cliente, trabajo o repuesto");
+            setOnSearch(null);
+            setSearchTerm("");
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+
+    const filteredSpares = spare.filter((r) => {
+        const matchesType = filter === "" || r.type?.toLowerCase() === filter.toLowerCase();
+        const matchesSearch = searchTerm === "" || (
+            r.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.code?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        return matchesType && matchesSearch;
+    });
 
     const handleDelete = async (id) => {
         const confirm = window.confirm("¿Estás seguro de que querés eliminar este repuesto?");
@@ -73,15 +92,8 @@ const StockList = () => {
                 </div>
 
                 <div className="flex gap-4">
-                    <input
-                        type="text"
-                        placeholder="Buscar por descripción o código"
-                        className="p-2 w-1/2 border-1 border-gray-300 rounded-md bg-white"
-                        value={find}
-                        onChange={(e) => setFind(e.target.value)}
-                    />
                     <select
-                        className="border-1 border-gray-300 rounded-md w-1/2 bg-white"
+                        className="border-1 border-gray-300 rounded-md w-full bg-white p-2"
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                     >
