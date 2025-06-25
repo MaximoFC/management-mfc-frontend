@@ -1,37 +1,69 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { getToken, getCurrentEmployee } from "../services/authService";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { getProfile } from "../services/authService";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [employee, setEmployee] = useState(null);
     const [token, setToken] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const isAuthenticated = !!employee;
+
+    const isCancelled = useRef(false);
 
     useEffect(() => {
-        const storedToken = getToken();
-        const storedEmployee = getCurrentEmployee();
-        if (storedToken && storedEmployee) {
-            setToken(storedToken);
-            setEmployee(storedEmployee);
-        }
+        isCancelled.current = false;
+
+        const verifyToken = async () => {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                if (!isCancelled.current) setLoading(false);
+                return;
+            }
+
+            try {
+                const employeeData = await getProfile();
+
+                if (!isCancelled.current) {
+                    setToken(token);
+                    setEmployee(employeeData);
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error('Error verifying profile: ', error.message);
+                if (!isCancelled.current) {
+                    logout();
+                }
+            }
+        };
+
+        verifyToken();
+
+        return () => {
+            isCancelled.current = true;
+        };
     }, []);
 
     const login = (employeeData, token) => {
-        setEmployee(employeeData);
+        localStorage.setItem("token", token);
+        localStorage.setItem("employee", JSON.stringify(employeeData));
         setToken(token);
-        localStorage.setItem('token', token);
-        localStorage.setItem('employee', JSON.stringify(employeeData));
+        setEmployee(employeeData);
     };
 
     const logout = () => {
         setEmployee(null);
         setToken(null);
+        
         localStorage.removeItem('token');
         localStorage.removeItem('employee');
+        
+        setLoading(false);
     };
 
     return (
-        <AuthContext.Provider value={{ employee, token, login, logout }}>
+        <AuthContext.Provider value={{ employee, token, login, logout, loading, isAuthenticated }}>
             {children}
         </AuthContext.Provider>
     );

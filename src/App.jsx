@@ -10,12 +10,13 @@ import Cash from './pages/Cash';
 import Budget from './pages/Budget';
 import WorkList from './pages/WorkList';
 import ClientList from './pages/ClientsList';
+import HomeRedirect from './components/HomeRedirect';
 
 function App() {
 
   return (
     <Routes>
-      <Route path='/' element={<Navigate to="/login" />} />
+      <Route path='/' element={<HomeRedirect />} />
       <Route path='/login' element={<Login />} />
 
       {/* Rutas protegidas */}
