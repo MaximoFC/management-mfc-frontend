@@ -11,6 +11,7 @@ import Budget from './pages/Budget';
 import WorkList from './pages/WorkList';
 import ClientList from './pages/ClientsList';
 import HomeRedirect from './components/HomeRedirect';
+import Notifications from './pages/Notifications';
 
 function App() {
 
@@ -89,6 +90,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ClientList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/notificaciones'
+        element={
+          <ProtectedRoute>
+            <Notifications />
           </ProtectedRoute>
         }
       />
