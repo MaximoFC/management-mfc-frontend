@@ -96,7 +96,7 @@ const Navbar = () => {
                 >
                     <IoIosNotificationsOutline className="h-7 w-7" />
                     {notifications.some(n => !n.seen) && (
-                        <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full" />
                     )}
                 </button>
 
@@ -108,14 +108,14 @@ const Navbar = () => {
                         <h4 className="text-lg font-semibold mb-2">Notificaciones</h4>
                         <ul className="flex flex-col gap-2 max-h-60 overflow-y-auto">
                             {notifications.length === 0 && (
-                                <p className="text-gray-500">No hay notificaciones</p>
+                                <p className="text-gray-500">No hay notificaciones nuevas</p>
                             )}
                             {notifications.map((n, i) => (
                                 <li key={i} className="border-b border-gray-400 pb-2">
                                     <p className="text-sm font-semibold">
                                         {n.type === 'alert' ? 'Alerta' : 'Recordatorio'}
                                     </p>
-                                    <p className="text-sm">{n.message_body}</p>
+                                    <p className="text-sm break-words">{n.message_body}</p>
                                     <p className="text-sm text-gray-400">{formatDate(n.creation_date)}</p>
                                 </li>
                             ))}

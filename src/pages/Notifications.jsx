@@ -45,9 +45,9 @@ const Notifications = () => {
                     notifications.map((notif, i) => (
                         <div
                             key={i}
-                            className="border-1 border-gray-300 rounded-md p-4 bg-white shadow-sm flex justify-between items-start"
+                            className="border-1 border-gray-300 rounded-md p-4 bg-white shadow-sm flex justify-between items-start overflow-x-hidden"
                         >
-                            <div className="flex flex-col gap-1">
+                            <div className="flex-1 flex flex-col gap-1 overflow-hidden">
                                 {!notif.seen && 
                                 <span className="text-red-500 text-md font-semibold flex items-center gap-1">
                                     <IoAlertCircleOutline className="h-5 w-5" /> 
@@ -56,7 +56,7 @@ const Notifications = () => {
                                 <p className="text-md font-semibold">
                                     {notif.type === 'alert' ? 'Alerta' : 'Recordatorio'}
                                 </p>
-                                <p className="text-md">{notif.message_body}</p>
+                                <p className="text-md break-words overflow-hidden">{notif.message_body}</p>
                                 <p className="text-sm text-gray-500">{formatDate(notif.creation_date)}</p>
                             </div>
                             {!notif.seen && (
