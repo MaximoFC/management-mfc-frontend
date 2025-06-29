@@ -140,7 +140,7 @@ const StockList = () => {
                                     <td className="px-4 py-2">{r.type}</td>
                                     <td className="px-4 py-2">{r.brand}</td>
                                     <td className="px-4 py-2 max-w-[200px] relative group">
-                                        <div className="truncate group-hover:whitespace-normal group-hover:absolute group-hover:z-10 group-hover:bg-white group-hover:p-2 group-hover:shadow-xl group-hover:rounded-md group-hover:max-h-[none] group-hover:w-[300px]">
+                                        <div className="truncate group-hover:whitespace-normal group-hover:absolute group-hover:z-10 group-hover:bg-white group-hover:p-2 group-hover:shadow-xl group-hover:rounded-md group-hover:max-h-[none] group-hover:w-[300px] break-words">
                                             {r.description}
                                         </div>
                                     </td>

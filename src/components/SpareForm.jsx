@@ -118,7 +118,7 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                     </div>
                     {(mode !== 'update') && (
                     <div className="flex flex-col">
-                        <label htmlFor="amount">Precio unitario (compra) *</label>
+                        <label htmlFor="amount">Costo unitario (compra) *</label>
                         <input
                             type="number"
                             className="border-1 border-gray-300 rounded-md p-2"
