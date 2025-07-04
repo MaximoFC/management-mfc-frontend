@@ -12,6 +12,8 @@ const Cash = () => {
     const [description, setDescription] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [filter, setFilter] = useState('today');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const filterLabels = {
         today: 'hoy',
         week: 'esta semana',
@@ -90,6 +92,7 @@ const Cash = () => {
     const totalExpenses = expenses.reduce((sum, f) => sum + f.amount, 0);
     const balance = totalIncome - totalExpenses;
 
+    const paginatedFlow = flow.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <Layout>
@@ -222,7 +225,7 @@ const Cash = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {flow.map((mov, i) => (
+                                {paginatedFlow.map((mov, i) => (
                                     <tr key={i} className="border-t border-gray-200">
                                         <td className="p-3 font-semibold text-sm">
                                             {mov.type === 'ingreso'
@@ -243,6 +246,23 @@ const Cash = () => {
                                 ))}
                             </tbody>
                         </table>
+                        <div className="flex justify-center w-full gap-25 items-center mt-4">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 cursor-pointer text-white"
+                            >
+                                Anterior
+                            </button>
+                            <span className="text-md">Página {currentPage}</span>
+                            <button
+                                onClick={() => setCurrentPage(prev => (prev * itemsPerPage < flow.length ? prev + 1 : prev))}
+                                disabled={currentPage * itemsPerPage >= flow.length}
+                                className="bg-red-500 px-3 py-1 rounded-md disabled:opacity-50 cursor-pointer text-white"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
