@@ -1,36 +1,67 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
-    const [form, setForm] = useState({
-        code: '',
-        type: '',
-        brand: '',
-        description: '',
-        price: '',
-        ...initialData,
-        amount: '',
-        stock: mode === 'replenish' ? '': initialData.stock || '',
+const getSchemaByMode = (mode) => {
+    if (mode === "replenish") {
+        return z.object({
+            stock: z.number().min(1, "Debe ingresar al menos 1 unidad"),
+            amount: z.number().min(0, "Debe ingresar el costo de compra")
+        });
+    }
+
+    const base = z.object({
+        code: z.string().min(1, "El código es obligatorio"),
+        type: z.string().min(1, "Debe seleccionar un tipo de repuesto"),
+        brand: z.string().min(1, "La marca es obligatoria"),
+        price: z.number().min(0, "El precio debe ser mayor o igual a 0"),
+        stock: z.number().min(0, "El stock debe ser mayor o igual a 0"),
+        description: z.string().min(1, "La descripción es obligatoria")
     });
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm({ ...form, [name]: value });
-    };
+    if (mode === "create") {
+        return base.extend({
+            amount: z.number().min(0, "Debe ingresar el costo de compra")
+        });
+    }
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    return base;
+};
+
+const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
+    const schema = getSchemaByMode(mode);
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(schema),
+        defaultValues: {
+            code: "",
+            type: "",
+            brand: "",
+            description: "",
+            price: "",
+            stock: "",
+            amount: "",
+            ...initialData
+        },
+    });
+
+    const onValid = (data) => {
         onSubmit({
-            ...form, 
-            stock: Number(form.stock), 
-            price: Number(form.price),
-            amount: Number(form.amount)
+            ...data,
+            stock: Number(data.stock),
+            price: Number(data.price),
+            amount: Number(data.amount)
         });
     };
 
     return (
         <div className="flex items-center justify-center h-dvh">
             <form 
-                onSubmit={handleSubmit}
+                onSubmit={handleSubmit(onValid)}
                 className="p-6 flex flex-col justify-center gap-4 rounded-md shadow-md border-1 border-gray-200 bg-white"
             >
                 <h2 className="text-2xl font-bold">
@@ -43,12 +74,9 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                             <div className="flex flex-col">
                                 <label htmlFor="">Tipo de repuesto *</label>
                                 <select
-                                className="border-1 border-gray-300 rounded-md p-2"
-                                name="type"
-                                id="type"
-                                value={form.type}
-                                onChange={handleChange}
-                                required
+                                    className="border-1 border-gray-300 rounded-md p-2"
+                                    id="type"
+                                    {...register("type")}
                                 >
                                     <option value="">Seleccionar repuesto</option>
                                     <option value="Piñón">Piñón</option>
@@ -57,6 +85,9 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                                     <option value="Masas traseras">Masas traseras</option>
                                     <option value="Masas delanteras">Masas delanteras</option>
                                 </select>
+                                {errors.type && (
+                                    <p className="text-red-500 text-sm">{errors.type.message}</p>
+                                )}
                             </div>
                             
                             <div className="flex flex-col">  
@@ -64,13 +95,13 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                                 <input
                                     className="border-1 border-gray-300 rounded-md p-2"
                                     type="text"
-                                    name="code"
                                     id="code"
-                                    placeholder="Código"
-                                    value={form.code}
-                                    onChange={handleChange}
-                                    required
+                                    {...register("code")}
+                                    placeholder="Ej: AB500"
                                 />
+                                {errors.code && (
+                                    <p className="text-red-500 text-sm">{errors.code.message}</p>
+                                )}
                             </div>
                             
                             <div className="flex flex-col">
@@ -78,13 +109,13 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                                 <input
                                     className="border-1 border-gray-300 rounded-md p-2"
                                     type="text"
-                                    name="brand"
                                     id="brand"
-                                    placeholder="Marca"
-                                    value={form.brand}
-                                    onChange={handleChange}
-                                    required
+                                    {...register("brand")}
+                                    placeholder="Ej: Shimano"
                                 />
+                                {errors.brand && (
+                                    <p className="text-red-500 text-sm">{errors.brand.message}</p>
+                                )}
                             </div>
 
                             <div className="flex flex-col">
@@ -92,43 +123,48 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                                 <input
                                     className="border-1 border-gray-300 rounded-md p-2"
                                     type="number"
-                                    name="price"
                                     id="price"
+                                    {...register("price", { valueAsNumber: true })}
                                     placeholder="Precio de venta"
-                                    value={form.price}
-                                    onChange={handleChange}
-                                    required
                                 />
+                                {errors.price && (
+                                    <p className="text-red-500 text-sm">{errors.price.message}</p>
+                                )}
                             </div>
                         </>
                     )}
 
                     <div className="flex flex-col">
-                        <label htmlFor="stock">Stock *</label>
+                        <label htmlFor="stock">
+                            {mode === "replenish" ? "Cantidad a agregar *" : "Stock *"}
+                        </label>
                         <input
                             className="border-1 border-gray-300 rounded-md p-2"
                             type="number"
-                            name="stock"
                             id="stock"
-                            placeholder={mode === 'replenish' ? 'Cantidad a agregar' : 'Cantidad'}
-                            value={form.stock}
-                            onChange={handleChange}
-                            required
+                            {...register("stock", { valueAsNumber: true })}
+                            placeholder="Cantidad"
                         />
+                        {errors.stock && (
+                            <p className="text-red-500 text-sm">{errors.stock.message}</p>
+                        )}
                     </div>
+
                     {(mode !== 'update') && (
                     <div className="flex flex-col">
                         <label htmlFor="amount">Costo unitario (compra) *</label>
                         <input
                             type="number"
                             className="border-1 border-gray-300 rounded-md p-2"
-                            name="amount"
                             id="amount"
-                            placeholder="Costo por unidad"
-                            value={form.amount || ''}
-                            onChange={handleChange}
-                            required
+                            {...register("amount", { valueAsNumber: true })}
+                            placeholder="Costo de compra"
                         />
+                        {errors.amount && (
+                            <p className="text-red-500 text-sm">
+                                {errors.amount.message}
+                            </p>
+                        )}
                     </div>
                 )}
                 </div>
@@ -138,13 +174,15 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                         <label htmlFor="description">Descripción *</label>
                         <textarea
                             className="border-1 border-gray-300 rounded-md p-2"
-                            name="description"
                             id="description"
-                            placeholder="Descripción"
-                            value={form.description}
-                            onChange={handleChange}
-                            required
+                            {...register("description")}
+                            placeholder="Descripción del producto"
                         />
+                        {errors.description && (
+                            <p className="text-red-500 text-sm">
+                                {errors.description.message}
+                            </p>
+                        )}
                     </div>
                 )}
 

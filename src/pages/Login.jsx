@@ -3,23 +3,40 @@ import { loginEmployee } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../context/AuthContext';
 import Logo from '/Logo MFC.jpg';
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const loginSchema = z.object({
+    name: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
+    password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres")
+});
 
 function Login() {
-    const [name, setName] = useState('');
-    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(loginSchema)
+    });
+
+    const onSubmit = async (data) => {
+        setLoading(true);
+        setError('');
         try {
-            const res = await loginEmployee(name, password);
+            const res = await loginEmployee(data.name, data.password);
             login(res.employee, res.token);
-            navigate('/dashboard');
-            //Añadir limpieza del formulario cuando todo esté funcional
+            navigate("/dashboard");
         } catch (error) {
-            setError(error.message || 'Login error');
+            setError(error.message || 'Error al iniciar sesión');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -35,7 +52,7 @@ function Login() {
                 <p className="text-gray-600">Sistema de gestión de taller</p>
             </div>
             <form 
-                onSubmit={handleSubmit}
+                onSubmit={handleSubmit(onSubmit)}
                 className="flex flex-col justify-center gap-4 border-1 border-gray-200 shadow-md rounded-xl p-6 text-center"
             >
                 <h2 className="text-xl font-bold">Iniciar sesión</h2>
@@ -43,27 +60,31 @@ function Login() {
                 <input 
                     type="text" 
                     placeholder="Nombre"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
+                    {...register("name")}
                     className="border-1 border-gray-200 rounded-md p-2"
                 />
+                {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
+                
                 <input 
                     type="password" 
                     placeholder="Contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    {...register("password")}
                     className="border-1 border-gray-200 rounded-md p-2"
                 />
+                {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+
                 <button 
                     type="submit"
-                    className="p-2 rounded-md cursor-pointer bg-red-500 text-white hover:bg-red-700"
+                    disabled={loading}
+                    className={`p-2 rounded-md cursor-pointer text-white ${
+                        loading ? "bg-gray-400" : "bg-red-500 hover:bg-red-700"
+                    }`}
                 >
-                    Iniciar sesión
+                    {loading ? "Cargando..." : "Iniciar sesión"}
                 </button>
             </form>
-            {error && <p className="text-red-500">{error}</p>}
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
         </div>
     )
 }
