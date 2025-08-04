@@ -24,11 +24,14 @@ function NewClient() {
   };
 
   return (
-    <div className="p-8 flex items-center justify-center min-h-[60vh]">
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-8 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-6 text-red-700">Agregar nuevo cliente</h2>
+    <div className="flex items-center justify-center h-dvh">
+      <form 
+        onSubmit={handleSubmit}
+        className="p-6 flex flex-col justify-center gap-4 rounded-md shadow-md border-1 border-gray-200 bg-white"
+      >
+        <h2 className="text-2xl font-bold">Agregar nuevo cliente</h2>
         <div className="mb-4">
-          <label className="block mb-1 font-semibold">Nombre *</label>
+          <label>Nombre *</label>
           <input
             type="text"
             className="w-full border rounded px-3 py-2"
@@ -38,7 +41,7 @@ function NewClient() {
           />
         </div>
         <div className="mb-4">
-          <label className="block mb-1 font-semibold">Apellido *</label>
+          <label>Apellido *</label>
           <input
             type="text"
             className="w-full border rounded px-3 py-2"
@@ -48,7 +51,7 @@ function NewClient() {
           />
         </div>
         <div className="mb-6">
-          <label className="block mb-1 font-semibold">Número de teléfono *</label>
+          <label>Número de teléfono *</label>
           <input
             type="text"
             className="w-full border rounded px-3 py-2"
@@ -60,7 +63,7 @@ function NewClient() {
         {error && <div className="text-red-500 mb-4">{error}</div>}
         <button
           type="submit"
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded"
+          className="rounded-md bg-red-500 text-white cursor-pointer p-2 hover:bg-red-700"
           disabled={loading}
         >
           {loading ? 'Guardando...' : 'Agregar cliente'}

@@ -30,7 +30,7 @@ export default function ClientBikesModal({ client, closeModal }) {
       const res = await fetch("http://localhost:4000/api/bikes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, client_id: client._id, active: true })
+        body: JSON.stringify({ ...form, current_owner_id: client._id, active: true })
       });
       if (!res.ok) throw new Error("No se pudo agregar la bicicleta");
       setForm(initialForm);

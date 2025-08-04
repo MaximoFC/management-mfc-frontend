@@ -13,6 +13,7 @@ import ClientList from './pages/ClientsList';
 import HomeRedirect from './components/HomeRedirect';
 import Notifications from './pages/Notifications';
 import NewClient from './pages/NewClient';
+import ClientDetail from './pages/ClientDetail';
 
 function App() {
 
@@ -115,6 +116,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Budget />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/clientes/:id'
+        element={
+          <ProtectedRoute>
+            <ClientDetail />
           </ProtectedRoute>
         }
       />
