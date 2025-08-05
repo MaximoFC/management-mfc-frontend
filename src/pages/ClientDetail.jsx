@@ -11,6 +11,10 @@ const ClientDetail = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [editSurname, setEditSurname] = useState('');
+    const [editMobileNum, setEditMobileNum] = useState('');
+    const [saving, setSaving] = useState('');
 
     // Fetch cliente + bicicletas
     const fetchClientData = async () => {
@@ -20,6 +24,9 @@ const ClientDetail = () => {
         if (!res.ok) throw new Error("Error al obtener el cliente");
         const data = await res.json();
         setClient(data.client);
+        setEditName(data.client.name);
+        setEditSurname(data.client.surname);
+        setEditMobileNum(data.client.mobileNum);
 
         if (data.bikes) setBikes(data.bikes);
         else {
@@ -42,20 +49,66 @@ const ClientDetail = () => {
     if (error) return <Layout><div className="text-red-500">Error: {error}</div></Layout>;
     if (!client) return <Layout><div>No se encontró el cliente</div></Layout>;
 
+    const handleSaveChanges = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch(`http://localhost:4000/api/clients/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: editName,
+                    surname: editSurname,
+                    mobileNum: editMobileNum
+                })
+            });
+
+            if (!res.ok) throw new Error('Error saving changes');
+
+            await fetchClientData();
+        } catch (e) {
+            alert(e.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <Layout>
             <div className="p-8 flex flex-col gap-4 max-w-4xl mx-auto">
                 <h2 className="text-2xl font-semibold">
-                    {client.name} {client.surname}
+                    <input
+                        className="text-xl font-bold border-b border-gray-400 focus:outline-none focus:border-red-500"
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                    />{" "}
+                    <input
+                        className="text-xl font-bold border-b border-gray-400 focus:outline-none focus:border-red-500"
+                        value={editSurname}
+                        onChange={e => setEditSurname(e.target.value)}
+                    />
                 </h2>
-                <p>Teléfono: {client.mobileNum}</p>
-                <p>Registrado el {new Date(client.createdAt).toLocaleDateString()}</p>
+                <p>
+                    Teléfono:{" "}
+                    <input
+                        className="border-b border-gray-400 focus:outline-none focus:border-red-500"
+                        value={editMobileNum}
+                        onChange={e => setEditMobileNum(e.target.value)}
+                    />
+                </p>
+
+                <button
+                    className="bg-red-500 hover:bg-red-700 text-white p-2 px-4 rounded-md cursor-pointer mt-6"
+                    onClick={handleSaveChanges}
+                    disabled={saving}
+                >
+                    {saving ? "Guardando..." : "Guardar cambios"}
+                </button>
 
                 <div className="mt-6 flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Bicicletas</h3>
                     <button
                         onClick={() => setShowModal(true)}
-                        className="bg-red-500 hover:bg-red-700 text-white p-2 px-4 rounded-md"
+                        className="bg-red-500 hover:bg-red-700 text-white p-2 px-4 rounded-md cursor-pointer"
                     >
                         + Agregar bicicleta
                     </button>
@@ -74,9 +127,9 @@ const ClientDetail = () => {
                                 <ul className="mt-1 space-y-1">
                                     {bike.history.map((item) => (
                                         <li key={item._id} className="text-sm text-gray-700">
-                                            <p>📅 {new Date(item.createdAt).toLocaleDateString()}</p>
-                                            <p>📝 {item.description || "Sin descripción"}</p>
-                                            <p>💵 ${item.price || 0}</p>
+                                            <p>{new Date(item.createdAt).toLocaleDateString()}</p>
+                                            <p>{item.description || "Sin descripción"}</p>
+                                            <p>${item.price || 0}</p>
                                         </li>
                                     ))}
                                 </ul>

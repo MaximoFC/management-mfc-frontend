@@ -48,13 +48,17 @@ const BudgetModal = ({ closeModal, selectedServices, selectedBikeparts }) => {
       bike_id: bikeId,
       employee_id: employeeId,
       parts: selectedBikeparts.map(bp => ({
-        bikepart_id: bp._id,
-        amount: 1
+        bikepart_id: bp.bikepart_id,
+        amount: bp.amount
       })),
       services: selectedServices.map(s => ({
-        service_id: s._id
-      }))
-    };
+        service_id: typeof s === "string"
+          ? s
+          : typeof s.service_id === "string"
+          ? s.service_id
+          : s.service_id?._id
+        }))
+      };
     console.log("BudgetData a enviar:", budgetData);
 
     try {

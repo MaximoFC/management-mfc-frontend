@@ -11,48 +11,64 @@ const ClientList = () => {
   const [bikeCount, setBikeCount] = useState(0);
   const [recentClients, setRecentClients] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const navigate = useNavigate();
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchClients(searchTerm);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchClients(searchTerm);
 
-      const now = new Date();
-      const clientsWithBikes = await Promise.all(
-        data.map(async (client) => {
-          try {
-            const res = await fetch(`http://localhost:4000/api/bikes?client_id=${client._id}`);
-            const bikes = await res.json();
-            return { ...client, bikes };
-          } catch {
-            return { ...client, bikes: [] };
-          }
-        })
-      );
+        const now = new Date();
+        const clientsWithBikes = await Promise.all(
+          data.map(async (client) => {
+            try {
+              const res = await fetch(`http://localhost:4000/api/bikes?client_id=${client._id}`);
+              const bikes = await res.json();
+              return { ...client, bikes };
+            } catch {
+              return { ...client, bikes: [] };
+            }
+          })
+        );
 
-      setClients(clientsWithBikes);
+        const sortedClients = [...clientsWithBikes].sort((a, b) => {
+          const nameA = `${a.name} ${a.surname}`.toLowerCase();
+          const nameB = `${b.name} ${b.surname}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
 
-      const totalBikes = clientsWithBikes.reduce((sum, c) => sum + c.bikes.length, 0);
-      setBikeCount(totalBikes);
+        setClients(sortedClients);
 
-      const recent = clientsWithBikes.filter(c => {
-        const created = new Date(c.createdAt);
-        const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-        return diffDays <= 30;
-      });
+        const totalBikes = clientsWithBikes.reduce((sum, c) => sum + c.bikes.length, 0);
+        setBikeCount(totalBikes);
 
-      setRecentClients(recent.length);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const recent = clientsWithBikes.filter(c => {
+          const created = new Date(c.createdAt);
+          const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+          return diffDays <= 30;
+        });
 
-  fetchData();
+        setRecentClients(recent.length);
+        setCurrentPage(1);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
 }, [searchTerm]);
+
+  const paginatedClients = clients.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <Layout>
       <div className="p-8 flex flex-col gap-4">
@@ -98,7 +114,7 @@ const ClientList = () => {
                 </tr>
               </thead>
               <tbody>
-                {clients.map((c) => (
+                {paginatedClients.map((c) => (
                   <tr
                     key={c._id}
                     className="border-t border-gray-200 hover:bg-gray-50 cursor-pointer"
@@ -118,6 +134,29 @@ const ClientList = () => {
                 ))}
               </tbody>
             </table>
+
+            <div className="flex justify-center w-full gap-4 items-center mt-4">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 text-white cursor-pointer"
+              >
+                Anterior
+              </button>
+              <span className="text-md">Página {currentPage}</span>
+              <button
+                onClick={() =>
+                  setCurrentPage(prev =>
+                    prev * itemsPerPage < clients.length ? prev + 1 : prev
+                  )
+                }
+                disabled={currentPage * itemsPerPage >= clients.length}
+                className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 text-white cursor-pointer"
+              >
+                Siguiente
+              </button>
+            </div>
+
           </div>
         )}
       </div>

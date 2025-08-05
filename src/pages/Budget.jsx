@@ -28,8 +28,21 @@ const Budget = () => {
 
   // (des)Seleccion de partes
   const toggleBikepart = (id) => {
+    setSelectedBikeparts((prev) => {
+      const exists = prev.find((item) => item.bikepart_id === id);
+      if (exists) {
+        return prev.filter((item) => item.bikepart_id !== id);
+      } else {
+        return [...prev, { bikepart_id: id, amount: 1 }];
+      }
+    });
+  };
+
+  const updateBikepartAmount = (id, amount) => {
     setSelectedBikeparts((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.map((item) =>
+        item.bikepart_id === id ? { ...item, amount: Number(amount) } : item
+      )
     );
   };
 
@@ -130,8 +143,17 @@ const Budget = () => {
                     <td className="py-3 px-6">{p.stock}</td>
                     <td className="py-3 px-6">${p.price}</td>
                     <td className="py-3 px-6">
-                      {selectedBikeparts.includes(p._id) && (
-                        <span className="inline-block bg-green-500 rounded-full w-5 h-5 border-2 border-green-600 shadow"></span>
+                      {selectedBikeparts.find((item) => item.bikepart_id === p._id) && (
+                        <input
+                          type="number"
+                          min="1"
+                          className="w-16 border rounded px-2 py-1"
+                          value={
+                            selectedBikeparts.find((item) => item.bikepart_id === p._id)?.amount || 1
+                          }
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => updateBikepartAmount(p._id, e.target.value)}
+                        />
                       )}
                     </td>
                   </tr>
@@ -165,8 +187,8 @@ const Budget = () => {
         {showModal && (
           <BudgetModal
             closeModal={() => setShowModal(false)}
-            selectedServices={services.filter(s => selectedServices.includes(s._id))}
-            selectedBikeparts={bikeparts.filter(p => selectedBikeparts.includes(p._id))}
+            selectedServices={selectedServices.map(id => ({ service_id: id }))}
+            selectedBikeparts={selectedBikeparts}
           />
         )}
 

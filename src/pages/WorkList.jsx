@@ -32,6 +32,7 @@ const WorkList = () => {
   }, []);
 
   const onDragEnd = async (result) => {
+    console.log("Drag result:", result);
     const { source, destination } = result;
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
