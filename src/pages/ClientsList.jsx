@@ -16,6 +16,8 @@ const ClientList = () => {
 
   const navigate = useNavigate();
 
+  const { setSearchPlaceholder, setOnSearch, setSearchTerm } = useSearch();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -68,6 +70,20 @@ const ClientList = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  useEffect(() => {
+    setSearchPlaceholder("Buscar cliente por nombre");
+    
+    setOnSearch(() => (term) => {
+      setSearchTerm(term);
+    });
+  
+    return () => {
+      setSearchPlaceholder("Buscar cliente, trabajo o repuesto");
+      setOnSearch(null);
+      setSearchTerm("");
+    };
+  }, []);
 
   return (
     <Layout>
