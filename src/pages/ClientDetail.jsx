@@ -15,6 +15,7 @@ const ClientDetail = () => {
     const [editSurname, setEditSurname] = useState('');
     const [editMobileNum, setEditMobileNum] = useState('');
     const [saving, setSaving] = useState('');
+    const [budgets, setBudgets] = useState([]);
 
     // Fetch cliente + bicicletas
     const fetchClientData = async () => {
@@ -41,8 +42,20 @@ const ClientDetail = () => {
         }
     };
 
+    const fetchBudgets = async () => {
+        try {
+            const res = await fetch(`http://localhost:4000/api/budgets/client/${id}`);
+            if (!res.ok) throw new Error('Error fetching budgets');
+            const data = await res.json();
+            setBudgets(data.budgets);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchClientData();
+        fetchBudgets();
     }, [id]);
 
     if (loading) return <Layout><div>Cargando...</div></Layout>;
@@ -123,15 +136,28 @@ const ClientDetail = () => {
                             <p>Estado: {bike.active ? "Activa" : "Deshabilitada"}</p>
 
                             <h4 className="mt-2 font-medium">Historial de arreglos</h4>
-                            {bike.history?.length > 0 ? (
+                            {budgets.filter(b => b.bike_id && b.bike_id._id === bike._id).length > 0 ? (
                                 <ul className="mt-1 space-y-1">
-                                    {bike.history.map((item) => (
-                                        <li key={item._id} className="text-sm text-gray-700">
-                                            <p>{new Date(item.createdAt).toLocaleDateString()}</p>
-                                            <p>{item.description || "Sin descripción"}</p>
-                                            <p>${item.price || 0}</p>
-                                        </li>
-                                    ))}
+                                    {budgets
+                                        .filter(b => b.bike_id && b.bike_id._id === bike._id)
+                                        .map((item) => (
+                                            <li key={item._id} className="text-sm text-gray-700">
+                                                <p>{new Date(item.creation_date).toLocaleDateString()}</p>
+                                                <p>{item.description || "Sin descripción"}</p>
+                                                <p>${item.total_usd || 0}</p>
+                                                <p>Estado: {item.state}</p>
+
+                                                {item.services?.length > 0 && (
+                                                    <ul className="text-xs text-gray-600 mt-1 ml-4 list-disc list-inside">
+                                                        {item.services.map(service => (
+                                                            <li key={service._id}>
+                                                                {service.name} - ${service.price_usd}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </li>
+                                        ))}
                                 </ul>
                             ) : (
                                 <p className="text-sm text-gray-500">Sin historial de arreglos</p>
