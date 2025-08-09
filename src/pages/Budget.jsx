@@ -20,7 +20,7 @@ const Budget = () => {
     fetchServices().then(setServices);
     fetchBikeparts().then(setBikeparts);
     fetchDollarRate()
-      .then(rate => setDollarRate(rate))
+      .then((rate) => setDollarRate(rate))
       .catch(() => setDollarRate(0));
   }, []);
 
@@ -64,24 +64,30 @@ const Budget = () => {
     return part ? acc + part.price * item.amount : acc;
   }, 0);
 
-  const totalBudgetARS = totalBikepartsARS + totalServicesUSD * ( dollarRate ?? 0);
+  const totalBudgetARS =
+    totalBikepartsARS + totalServicesUSD * (dollarRate ?? 0);
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto p-6 flex flex-col gap-4">
-        <div className="flex flex-col gap-4 bg-white border-1 border-gray-200 rounded-md p-8">
+      <div className="max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-6">
+        <div className="flex flex-col gap-6 bg-white border border-gray-200 rounded-md p-4 md:p-6">
           <h2 className="text-2xl font-bold">Crear presupuesto</h2>
 
-          <div className="flex gap-4 mb-4 items-center">
-            <div className="w-2/3 flex justify-around gap-2">
+          {/* Tabs y botón, column en móvil, fila en md */}
+          <div className="flex flex-col md:flex-row gap-4 items-center mb-4">
+            <div className="w-full md:w-2/3 flex gap-2">
               <button
-                className={`cursor-pointer w-1/2 px-6 py-3 rounded-md text-lg font-semibold ${tab === "services" ? "bg-red-500 text-white" : "bg-gray-200"}`}
+                className={`cursor-pointer flex-1 px-6 py-3 rounded-md text-lg font-semibold ${
+                  tab === "services" ? "bg-red-500 text-white" : "bg-gray-200"
+                }`}
                 onClick={() => setTab("services")}
               >
                 Servicios
               </button>
               <button
-                className={`cursor-pointer w-1/2 px-6 py-3 rounded-md text-lg font-semibold ${tab === "parts" ? "bg-red-500 text-white" : "bg-gray-200"}`}
+                className={`cursor-pointer flex-1 px-6 py-3 rounded-md text-lg font-semibold ${
+                  tab === "parts" ? "bg-red-500 text-white" : "bg-gray-200"
+                }`}
                 onClick={() => setTab("parts")}
               >
                 Repuestos
@@ -89,125 +95,152 @@ const Budget = () => {
             </div>
 
             <button
-              className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md cursor-pointer"
+              className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md cursor-pointer w-full md:w-auto"
               onClick={() => setShowAddService(true)}
-              style={{ marginLeft: "auto" }}
             >
               + Agregar servicio
             </button>
           </div>
 
-          {tab === "services" && (
-            <table className="w-full bg-white">
-              <thead className="text-gray-500 border-1 border-gray-300">
-                <tr>
-                  <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2 text-left">Nombre</th>
-                  <th className="px-4 py-2 text-left">Descripción</th>
-                  <th className="px-4 py-2 text-left">Costo (USD)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.map((s) => (
-                  <tr key={s._id} className="border-t border-gray-200 hover:bg-gray-50 h-16">
-                    <td className="py-3 px-6">
-                      <input
-                        type="checkbox"
-                        checked={selectedServices.includes(s._id)}
-                        onChange={() => toggleService(s._id)}
-                      />
-                    </td>
-                    <td className="py-3 px-6">{s.name}</td>
-                    <td className="py-3 px-6">{s.description}</td>
-                    <td className="py-3 px-6">${s.price_usd}</td>
+          {/* Tabla con scroll horizontal */}
+          <div className="overflow-x-auto">
+            {tab === "services" && (
+              <table className="w-full min-w-[600px] bg-white">
+                <thead className="text-gray-500 border border-gray-300">
+                  <tr>
+                    <th className="px-4 py-2"></th>
+                    <th className="px-4 py-2 text-left">Nombre</th>
+                    <th className="px-4 py-2 text-left">Descripción</th>
+                    <th className="px-4 py-2 text-left">Costo (USD)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody>
+                  {services.map((s) => (
+                    <tr
+                      key={s._id}
+                      className="border-t border-gray-200 hover:bg-gray-50 h-16"
+                    >
+                      <td className="py-3 px-6">
+                        <input
+                          type="checkbox"
+                          checked={selectedServices.includes(s._id)}
+                          onChange={() => toggleService(s._id)}
+                        />
+                      </td>
+                      <td className="py-3 px-6">{s.name}</td>
+                      <td className="py-3 px-6">{s.description}</td>
+                      <td className="py-3 px-6">${s.price_usd}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
 
-          {tab === "parts" && (
-            <table className="w-full bg-white">
-              <thead className="text-gray-500 border-1 border-gray-300">
-                <tr>
-                  <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2 text-left">Código</th>
-                  <th className="px-4 py-2 text-left">Marca</th>
-                  <th className="px-4 py-2 text-left">Tipo</th>
-                  <th className="px-4 py-2 text-left">Descripción</th>
-                  <th className="px-4 py-2 text-left">Stock</th>
-                  <th className="px-4 py-2 text-left">Precio ($)</th>
-                  <th className="px-4 py-2 text-left">Cantidad</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bikeparts
-                  .filter((p) => p.stock > 0)
-                  .map((p) => {
-                    const selected = selectedBikeparts.find((item) => item.bikepart_id === p._id);
-                    return (
-                      <tr key={p._id} className="border-t border-gray-200 hover:bg-gray-50 h-16">
-                        <td className="py-3 px-6">
-                          <input
-                            type="checkbox"
-                            checked={!!selected}
-                            onChange={() => toggleBikepart(p._id)}
-                          />
-                        </td>
-                        <td className="py-3 px-6">{p.code}</td>
-                        <td className="py-3 px-6">{p.brand}</td>
-                        <td className="py-3 px-6">{p.type}</td>
-                        <td className="py-3 px-6">{p.description}</td>
-                        <td className="py-3 px-6">{p.stock}</td>
-                        <td className="py-3 px-6">${p.price}</td>
-                        <td className="py-3 px-6">
-                          {selected && (
+            {tab === "parts" && (
+              <table className="w-full min-w-[800px] bg-white">
+                <thead className="text-gray-500 border border-gray-300">
+                  <tr>
+                    <th className="px-4 py-2"></th>
+                    <th className="px-4 py-2 text-left">Código</th>
+                    <th className="px-4 py-2 text-left">Marca</th>
+                    <th className="px-4 py-2 text-left">Tipo</th>
+                    <th className="px-4 py-2 text-left">Descripción</th>
+                    <th className="px-4 py-2 text-left">Stock</th>
+                    <th className="px-4 py-2 text-left">Precio ($)</th>
+                    <th className="px-4 py-2 text-left">Cantidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bikeparts
+                    .filter((p) => p.stock > 0)
+                    .map((p) => {
+                      const selected = selectedBikeparts.find(
+                        (item) => item.bikepart_id === p._id
+                      );
+                      return (
+                        <tr
+                          key={p._id}
+                          className="border-t border-gray-200 hover:bg-gray-50 h-16"
+                        >
+                          <td className="py-3 px-6">
                             <input
-                              type="number"
-                              min="1"
-                              max={p.stock}
-                              className="w-16 border rounded px-2 py-1"
-                              value={selected.amount}
-                              onChange={(e) => updateBikepartAmount(p._id, e.target.value)}
+                              type="checkbox"
+                              checked={!!selected}
+                              onChange={() => toggleBikepart(p._id)}
                             />
-                          )}
-                        </td>
-                      </tr>
-                    );
-                })}
-              </tbody>
-            </table>
-          )}
-          <p className="text-right text-gray-500">
-            * Los precios de los servicios están expresados en USD - Cotización actual: <br /> 
-            {dollarRate === null 
-              ? "Cargando cotización..."
-              : `$${dollarRate}`
-            }
+                          </td>
+                          <td className="py-3 px-6">{p.code}</td>
+                          <td className="py-3 px-6">{p.brand}</td>
+                          <td className="py-3 px-6">{p.type}</td>
+                          <td className="py-3 px-6">{p.description}</td>
+                          <td className="py-3 px-6">{p.stock}</td>
+                          <td className="py-3 px-6">${p.price}</td>
+                          <td className="py-3 px-6">
+                            {selected && (
+                              <input
+                                type="number"
+                                min="1"
+                                max={p.stock}
+                                className="w-16 border rounded px-2 py-1"
+                                value={selected.amount}
+                                onChange={(e) =>
+                                  updateBikepartAmount(p._id, e.target.value)
+                                }
+                              />
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <p className="text-right text-gray-500 text-sm md:text-base mt-2">
+            * Los precios de los servicios están expresados en USD - Cotización
+            actual: <br />
+            {dollarRate === null ? "Cargando cotización..." : `$${dollarRate}`}
           </p>
         </div>
 
         {/* Resumen y botón */}
-        <div className="flex flex-col justify-between items-center mt-10 gap-6">
-          <div className="flex gap-6 w-full justify-between">
-            <div className="border-1 border-gray-300 rounded-md py-2 px-6 bg-white">
-              <p className="text-md mb-2 font-semibold">Servicios seleccionados: {selectedServices.length}</p>
-              <p className="text-sm mb-2 font-semibold text-gray-500">Total Servicios (USD)</p>
-              <p className="text-2xl font-bold text-green-500">${totalServicesUSD.toFixed(2)}</p>
+        <div className="flex flex-col md:flex-col lg:flex-row gap-6 justify-center lg:justify-between items-center mt-10 w-full">
+          <div className="flex flex-col md:flex-row gap-6 w-full md:w-auto justify-center md:justify-start">
+            <div className="border border-gray-300 rounded-md py-4 px-6 bg-white text-center md:text-left">
+              <p className="text-md mb-2 font-semibold">
+                Servicios seleccionados: {selectedServices.length}
+              </p>
+              <p className="text-sm mb-2 font-semibold text-gray-500">
+                Total Servicios (USD)
+              </p>
+              <p className="text-2xl font-bold text-green-500">
+                ${totalServicesUSD.toFixed(2)}
+              </p>
             </div>
-            <div className="border-1 border-gray-300 rounded-md py-2 px-6 bg-white">
-              <p className="text-md mb-2 font-semibold">Repuestos seleccionados: {selectedBikeparts.length}</p>
-              <p className="text-sm mb-2 font-semibold text-gray-500">Total Repuestos (ARS)</p>
-              <p className="text-2xl font-bold text-blue-500">${totalBikepartsARS.toFixed(2)}</p>
+            <div className="border border-gray-300 rounded-md py-4 px-6 bg-white text-center md:text-left">
+              <p className="text-md mb-2 font-semibold">
+                Repuestos seleccionados: {selectedBikeparts.length}
+              </p>
+              <p className="text-sm mb-2 font-semibold text-gray-500">
+                Total Repuestos (ARS)
+              </p>
+              <p className="text-2xl font-bold text-blue-500">
+                ${totalBikepartsARS.toFixed(2)}
+              </p>
             </div>
-            <div className="border-1 border-gray-300 rounded-md py-2 px-6 bg-white">
-              <p className="text-sm mb-2 font-semibold text-gray-500">Total Presupuesto (ARS)</p>
-              <p className="text-2xl font-bold text-purple-500">${totalBudgetARS.toFixed(2)}</p>
+            <div className="border border-gray-300 rounded-md py-4 px-6 bg-white text-center md:text-left">
+              <p className="text-sm mb-2 font-semibold text-gray-500">
+                Total Presupuesto (ARS)
+              </p>
+              <p className="text-2xl font-bold text-purple-500">
+                ${totalBudgetARS.toFixed(2)}
+              </p>
             </div>
           </div>
 
           <button
-            className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md cursor-pointer"
+            className="bg-red-500 hover:bg-red-700 text-white p-3 rounded-md cursor-pointer w-full md:w-auto"
             onClick={() => setShowModal(true)}
           >
             Generar presupuesto
@@ -217,7 +250,9 @@ const Budget = () => {
         {showModal && (
           <BudgetModal
             closeModal={() => setShowModal(false)}
-            selectedServices={selectedServices.map(id => ({ service_id: id }))}
+            selectedServices={selectedServices.map((id) => ({
+              service_id: id,
+            }))}
             selectedBikeparts={selectedBikeparts}
           />
         )}
@@ -226,7 +261,7 @@ const Budget = () => {
           <AddServiceModal
             onClose={() => setShowAddService(false)}
             onSuccess={(newService) => {
-              setServices(prev => [...prev, newService]);
+              setServices((prev) => [...prev, newService]);
               setShowAddService(false);
             }}
           />

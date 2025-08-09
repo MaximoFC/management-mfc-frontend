@@ -41,50 +41,52 @@ function Login() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-dvh gap-4">
+        <div className="flex flex-col items-center justify-center h-dvh gap-6 px-4">
             <div className="flex flex-col items-center gap-2">
                 <img
                     src={Logo}
                     alt="Logo de MFC"
                     className="h-20 w-20 rounded-full"
                 />
-                <h2 className="text-3xl font-bold">MFC Admin</h2>
-                <p className="text-gray-600">Sistema de gestión de taller</p>
+                <h2 className="text-2xl md:text-3xl font-bold">MFC Admin</h2>
+                <p className="text-gray-600 text-center">Sistema de gestión de taller</p>
             </div>
+
             <form 
                 onSubmit={handleSubmit(onSubmit)}
-                className="flex flex-col justify-center gap-4 border-1 border-gray-200 shadow-md rounded-xl p-6 text-center"
+                className="w-full max-w-sm flex flex-col justify-center gap-4 border border-gray-200 shadow-md rounded-xl p-6 text-center bg-white"
             >
-                <h2 className="text-xl font-bold">Iniciar sesión</h2>
-                <p className="text-gray-600">Ingresá tus credenciales para acceder al sistema</p>
+                <h2 className="text-lg md:text-xl font-bold">Iniciar sesión</h2>
+                <p className="text-gray-600 text-sm md:text-base">Ingresá tus credenciales para acceder al sistema</p>
+        
                 <input 
                     type="text" 
                     placeholder="Nombre"
                     {...register("name")}
-                    className="border-1 border-gray-200 rounded-md p-2"
+                    className="border border-gray-200 rounded-md p-2 w-full"
                 />
-                {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
-                
+                {errors.name && <p className="text-red-500 text-sm text-left">{errors.name.message}</p>}
+        
                 <input 
                     type="password" 
                     placeholder="Contraseña"
                     {...register("password")}
-                    className="border-1 border-gray-200 rounded-md p-2"
+                    className="border border-gray-200 rounded-md p-2 w-full"
                 />
-                {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+                {errors.password && <p className="text-red-500 text-sm text-left">{errors.password.message}</p>}
 
                 <button 
                     type="submit"
                     disabled={loading}
-                    className={`p-2 rounded-md cursor-pointer text-white ${
-                        loading ? "bg-gray-400" : "bg-red-500 hover:bg-red-700"
+                    className={`p-2 rounded-md w-full text-white transition-colors duration-300 ${
+                        loading ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-700"
                     }`}
                 >
                     {loading ? "Cargando..." : "Iniciar sesión"}
                 </button>
             </form>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         </div>
     )
 }
