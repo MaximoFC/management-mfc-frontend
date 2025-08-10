@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { SPARE_TYPES } from "../constants/spareTypes";
 
 const getSchemaByMode = (mode) => {
     if (mode === "replenish") {
@@ -79,11 +80,11 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                                     {...register("type")}
                                 >
                                     <option value="">Seleccionar repuesto</option>
-                                    <option value="Piñón">Piñón</option>
-                                    <option value="Plato">Plato</option>
-                                    <option value="Frenos">Frenos</option>
-                                    <option value="Masas traseras">Masas traseras</option>
-                                    <option value="Masas delanteras">Masas delanteras</option>
+                                    {SPARE_TYPES.map((type) => (
+                                        <option key={type} value={type}>
+                                            {type}
+                                        </option>
+                                    ))}
                                 </select>
                                 {errors.type && (
                                     <p className="text-red-500 text-sm">{errors.type.message}</p>

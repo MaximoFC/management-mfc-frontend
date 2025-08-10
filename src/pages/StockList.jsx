@@ -6,6 +6,7 @@ import { AiOutlineDelete } from "react-icons/ai";
 import { FaRegEdit } from "react-icons/fa";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import { useSearch } from "../context/SearchContext";
+import { SPARE_TYPES } from "../constants/spareTypes";
 
 const StockList = () => {
   const [spare, setSpare] = useState([]);
@@ -107,11 +108,11 @@ const StockList = () => {
             onChange={(e) => setFilter(e.target.value)}
           >
             <option value="">Todos</option>
-            <option value="Piñón">Piñón</option>
-            <option value="Plato">Plato</option>
-            <option value="Frenos">Frenos</option>
-            <option value="Masas traseras">Masas traseras</option>
-            <option value="Masas delanteras">Masas delanteras</option>
+            {SPARE_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
         </div>
 
