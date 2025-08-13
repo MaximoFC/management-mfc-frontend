@@ -181,9 +181,12 @@ const Cash = () => {
           </div>
 
           {showModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
-              <div className="bg-white p-6 rounded-xl w-full max-w-md flex flex-col gap-4">
-                <h2 className="text-xl font-bold">Movimiento manual</h2>
+            <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50 px-4">
+              <div className="bg-white p-4 sm:p-6 rounded-xl w-full max-w-md flex flex-col gap-4">
+                <h2 className="text-xl font-bold text-center sm:text-left">
+                  Movimiento manual
+                </h2>
+
                 <select
                   className="border p-2 rounded"
                   value={type}
@@ -193,6 +196,7 @@ const Cash = () => {
                   <option value="ingreso">Ingreso</option>
                   <option value="egreso">Egreso</option>
                 </select>
+
                 <input
                   type="number"
                   placeholder="Monto"
@@ -200,6 +204,7 @@ const Cash = () => {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
+
                 <input
                   type="text"
                   placeholder="Descripción"
@@ -207,15 +212,16 @@ const Cash = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
-                <div className="flex justify-end gap-4 mt-4">
+
+                <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
                   <button
-                    className="bg-gray-200 p-2 rounded cursor-pointer hover:bg-gray-300"
+                    className="bg-gray-200 p-2 rounded hover:bg-gray-300"
                     onClick={() => setShowModal(false)}
                   >
                     Cancelar
                   </button>
                   <button
-                    className="bg-red-500 text-white p-2 rounded hover:bg-red-700 cursor-pointer"
+                    className="bg-red-500 text-white p-2 rounded hover:bg-red-700"
                     onClick={handleAddManualFlow}
                   >
                     Confirmar

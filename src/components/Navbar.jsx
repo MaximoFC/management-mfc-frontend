@@ -131,16 +131,18 @@ const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
 
         {showNotifications && (
           <div
-            className="absolute right-15 top-14 w-80 bg-white border-1 border-gray-300 rounded-md shadow-md z-50 p-4"
+            className="absolute top-14 right-4 sm:right-10 w-[90vw] max-w-sm bg-white border border-gray-300 rounded-md shadow-md z-50 p-4"
             ref={notificationRef}
           >
             <h4 className="text-lg font-semibold mb-2">Notificaciones</h4>
             <ul className="flex flex-col gap-2 max-h-60 overflow-y-auto">
               {notifications.length === 0 && (
-                <p className="text-gray-500">No hay notificaciones nuevas</p>
+                <p className="text-gray-500 text-sm">
+                  No hay notificaciones nuevas
+                </p>
               )}
               {notifications.map((n, i) => (
-                <li key={i} className="border-b border-gray-400 pb-2">
+                <li key={i} className="border-b border-gray-200 pb-2">
                   <p className="text-sm font-semibold">
                     {n.type === "alert" ? "Alerta" : "Recordatorio"}
                   </p>
@@ -156,7 +158,7 @@ const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
               onClick={() => {
                 setTimeout(() => setShowNotifications(false), 100);
               }}
-              className="block text-center mt-4 text-sm text-red-600 hover:underline z-60"
+              className="block text-center mt-4 text-sm text-red-600 hover:underline"
             >
               Ver todas
             </Link>

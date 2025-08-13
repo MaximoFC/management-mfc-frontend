@@ -37,11 +37,15 @@ const Notifications = () => {
 
   return (
     <Layout>
-      <div className="p-6 flex flex-col gap-4 max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold">Notificaciones</h2>
+      <div className="px-4 py-6 flex flex-col gap-4 max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold text-center md:text-left">
+          Notificaciones
+        </h2>
 
         {notifications.length === 0 ? (
-          <p className="text-gray-500">No hay notificaciones por el momento</p>
+          <p className="text-gray-500 text-center md:text-left">
+            No hay notificaciones por el momento
+          </p>
         ) : (
           notifications.map((notif, i) => (
             <div
@@ -51,7 +55,7 @@ const Notifications = () => {
               <div className="flex-1 flex flex-col gap-1 overflow-hidden">
                 {!notif.seen && (
                   <span className="text-red-500 text-md font-semibold flex items-center gap-1">
-                    <IoAlertCircleOutline className="h-5 w-5" />
+                    <IoAlertCircleOutline className="h-5 w-5 shrink-0" />
                     Nueva
                   </span>
                 )}
@@ -69,10 +73,10 @@ const Notifications = () => {
               {!notif.seen && (
                 <button
                   onClick={() => markAsSeen(notif._id)}
-                  className="text-sm text-blue-600 hover:underline cursor-pointer flex gap-2 items-center whitespace-nowrap"
+                  className="text-sm text-blue-600 hover:underline cursor-pointer flex gap-2 items-center whitespace-nowrap self-end md:self-auto"
                 >
                   Marcar como leída
-                  <FaRegCheckCircle className="w-4 h-4" />
+                  <FaRegCheckCircle className="w-4 h-4 shrink-0" />
                 </button>
               )}
             </div>
