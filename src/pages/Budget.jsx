@@ -59,13 +59,13 @@ const Budget = () => {
     .filter((s) => selectedServices.includes(s._id))
     .reduce((acc, s) => acc + Number(s.price_usd), 0);
 
-  const totalBikepartsARS = selectedBikeparts.reduce((acc, item) => {
+  const totalBikepartsUSD = selectedBikeparts.reduce((acc, item) => {
     const part = bikeparts.find((p) => p._id === item.bikepart_id);
-    return part ? acc + part.price * item.amount : acc;
+    return part ? acc + Number(part.price_usd) * item.amount : acc;
   }, 0);
 
-  const totalBudgetARS =
-    totalBikepartsARS + totalServicesUSD * (dollarRate ?? 0);
+  const totalBudgetUSD = totalBikepartsUSD + totalServicesUSD;
+  const totalBudgetARS = totalBudgetUSD * (dollarRate ?? 0);
 
   const handleDownloadPdf = async () => {
     const budgetData = {
@@ -86,7 +86,7 @@ const Budget = () => {
           return {
             name: part?.description || "Repuesto",
             qty: bp.amount,
-            price: Number(part?.price || 0)
+            price: Number(part?.price_usd || 0) * (dollarRate ?? 0)
           };
         })
       ],
@@ -125,7 +125,7 @@ const Budget = () => {
           <div className="flex flex-wrap md:flex-nowrap gap-4 items-stretch mb-4 w-full">
             <div className="flex-1 flex gap-2 min-w-[250px]">
               <button
-                className={`flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${
+                className={`cursor-pointer flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${
                   tab === "services" ? "bg-red-500 text-white" : "bg-gray-200"
                 }`}
                 onClick={() => setTab("services")}
@@ -133,7 +133,7 @@ const Budget = () => {
                 Servicios
               </button>
               <button
-                className={`flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${
+                className={`cursor-pointer flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${
                   tab === "parts" ? "bg-red-500 text-white" : "bg-gray-200"
                 }`}
                 onClick={() => setTab("parts")}
@@ -144,7 +144,7 @@ const Budget = () => {
 
             <div className="w-full md:w-auto">
               <button
-                className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md w-full md:w-auto"
+                className="cursor-pointer bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md w-full md:w-auto"
                 onClick={() => setShowAddService(true)}
               >
                 + Agregar servicio
@@ -224,7 +224,7 @@ const Budget = () => {
                           <td className="py-3 px-6">{p.type}</td>
                           <td className="py-3 px-6">{p.description}</td>
                           <td className="py-3 px-6">{p.stock}</td>
-                          <td className="py-3 px-6">${p.price}</td>
+                          <td className="py-3 px-6">${p.price_usd}</td>
                           <td className="py-3 px-6">
                             {selected && (
                               <input
@@ -248,9 +248,8 @@ const Budget = () => {
           </div>
 
           <p className="text-right text-gray-500 text-sm md:text-base mt-2">
-            * Los precios de los servicios están expresados en USD - Cotización
-            actual: <br />
-            {dollarRate === null ? "Cargando cotización..." : `$${dollarRate}`}
+            * Los precios de los servicios y repuestos están expresados en USD - Cotización
+            actual: {dollarRate === null ? "Cargando cotización..." : `$${dollarRate}`}
           </p>
         </div>
 
@@ -273,10 +272,10 @@ const Budget = () => {
                 Repuestos seleccionados: {selectedBikeparts.length}
               </p>
               <p className="text-sm mb-2 font-semibold text-gray-500">
-                Total Repuestos (ARS)
+                Total Repuestos (USD)
               </p>
               <p className="text-2xl font-bold text-blue-500">
-                ${totalBikepartsARS.toFixed(2)}
+                ${totalBikepartsUSD.toFixed(2)}
               </p>
             </div>
             <div className="border border-gray-300 rounded-md py-4 px-6 bg-white text-center md:text-left">

@@ -65,7 +65,7 @@ const StockList = () => {
   const lowStock = spare.filter((r) => r.stock > 0 && r.stock <= 5).length;
   const withoutStock = spare.filter((r) => r.stock === 0).length;
   const totalInventoryAmount = spare.reduce(
-    (total, r) => total + r.stock * r.price,
+    (total, r) => total + r.stock * r.price_usd,
     0
   );
 
@@ -156,7 +156,7 @@ const StockList = () => {
                       </div>
                     </td>
                     <td className="px-4 py-2">{r.stock}</td>
-                    <td className="px-4 py-2">${r.price}</td>
+                    <td className="px-4 py-2">${r.price_usd}</td>
                     <td className={`px-4 py-2 font-semibold ${statusColor}`}>
                       {status}
                     </td>

@@ -54,7 +54,7 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
     onSubmit({
       ...data,
       stock: Number(data.stock),
-      price: Number(data.price),
+      price_usd: Number(data.price),
       amount: Number(data.amount),
     });
   };
@@ -124,13 +124,13 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
               </div>
 
               <div className="flex flex-col">
-                <label htmlFor="price">Precio *</label>
+                <label htmlFor="price">Precio (USD) *</label>
                 <input
                   className="border border-gray-300 rounded-md p-2"
                   type="number"
                   id="price"
                   {...register("price", { valueAsNumber: true })}
-                  placeholder="Precio de venta"
+                  placeholder="Precio en dólares"
                 />
                 {errors.price && (
                   <p className="text-red-500 text-sm">{errors.price.message}</p>
@@ -157,13 +157,13 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
 
           {mode !== "update" && (
             <div className="flex flex-col">
-              <label htmlFor="amount">Costo unitario (compra) *</label>
+              <label htmlFor="amount">Costo unitario (ARS) *</label>
               <input
                 type="number"
                 className="border border-gray-300 rounded-md p-2"
                 id="amount"
                 {...register("amount", { valueAsNumber: true })}
-                placeholder="Costo de compra"
+                placeholder="Costo en pesos"
               />
               {errors.amount && (
                 <p className="text-red-500 text-sm">{errors.amount.message}</p>
