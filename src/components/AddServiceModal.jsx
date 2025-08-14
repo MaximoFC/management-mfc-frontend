@@ -16,7 +16,7 @@ const AddServiceModal = ({ onClose, onSuccess }) => {
       const data = await createService({
         name,
         description,
-        price_usd: Number(price_usd)
+        price_usd: Number(price_usd),
       });
       setMsg({ type: "success", text: "Servicio creado!" });
       setTimeout(() => {
@@ -30,8 +30,8 @@ const AddServiceModal = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-[400px] relative">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 px-4">
+      <div className="bg-white p-6 sm:p-8 rounded-lg shadow-lg w-full max-w-[400px] relative">
         <button
           className="absolute right-3 top-3 text-gray-400 text-lg hover:text-red-500"
           type="button"
@@ -39,38 +39,45 @@ const AddServiceModal = ({ onClose, onSuccess }) => {
         >
           &times;
         </button>
-        <h3 className="text-xl font-bold mb-6">Agregar servicio</h3>
+
+        <h3 className="text-xl font-bold mb-6 text-center sm:text-left">
+          Agregar servicio
+        </h3>
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block mb-1 font-semibold">Nombre</label>
             <input
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               required
               className="w-full border rounded p-2"
               autoFocus
             />
           </div>
+
           <div className="mb-4">
             <label className="block mb-1 font-semibold">Descripción</label>
             <input
               value={description}
-              onChange={e => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value)}
               required
               className="w-full border rounded p-2"
             />
           </div>
+
           <div className="mb-4">
             <label className="block mb-1 font-semibold">Costo (USD)</label>
             <input
               type="number"
               min={1}
               value={price_usd}
-              onChange={e => setPriceUsd(e.target.value)}
+              onChange={(e) => setPriceUsd(e.target.value)}
               required
               className="w-full border rounded p-2"
             />
           </div>
+
           <button
             className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded font-bold w-full mt-2"
             type="submit"
@@ -78,8 +85,13 @@ const AddServiceModal = ({ onClose, onSuccess }) => {
           >
             {loading ? "Agregando..." : "Agregar"}
           </button>
+
           {msg && (
-            <div className={`mt-2 text-center ${msg.type === "success" ? "text-green-600" : "text-red-600"}`}>
+            <div
+              className={`mt-2 text-center ${
+                msg.type === "success" ? "text-green-600" : "text-red-600"
+              }`}
+            >
               {msg.text}
             </div>
           )}
@@ -90,4 +102,3 @@ const AddServiceModal = ({ onClose, onSuccess }) => {
 };
 
 export default AddServiceModal;
-

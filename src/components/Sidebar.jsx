@@ -15,7 +15,7 @@ const Sidebar = () => {
 
   return (
     <>
-      <div className="flex-col h-dvh p-4 gap-2 border-r-1 border-gray-300 w-60">
+      <div className="flex-col h-dvh p-4 gap-2 w-60 md:mt-4">
         <Link to="/dashboard" className={linkClasses("/dashboard")}>
           <LuLayoutDashboard className="w-6 h-6" /> Dashboard
         </Link>
