@@ -116,7 +116,7 @@ const StockList = () => {
           </select>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto lg:overflow-x-visible">
           <table className="min-w-full bg-white">
             <thead className="text-gray-500 border-b border-gray-300">
               <tr>

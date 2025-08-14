@@ -122,10 +122,10 @@ const Budget = () => {
           <h2 className="text-2xl font-bold">Crear presupuesto</h2>
 
           {/* Tabs y botón, column en móvil, fila en md */}
-          <div className="flex flex-col md:flex-row gap-4 items-center mb-4">
-            <div className="w-full md:w-2/3 flex gap-2">
+          <div className="flex flex-wrap md:flex-nowrap gap-4 items-stretch mb-4 w-full">
+            <div className="flex-1 flex gap-2 min-w-[250px]">
               <button
-                className={`cursor-pointer flex-1 px-6 py-3 rounded-md text-lg font-semibold ${
+                className={`flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${
                   tab === "services" ? "bg-red-500 text-white" : "bg-gray-200"
                 }`}
                 onClick={() => setTab("services")}
@@ -133,7 +133,7 @@ const Budget = () => {
                 Servicios
               </button>
               <button
-                className={`cursor-pointer flex-1 px-6 py-3 rounded-md text-lg font-semibold ${
+                className={`flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${
                   tab === "parts" ? "bg-red-500 text-white" : "bg-gray-200"
                 }`}
                 onClick={() => setTab("parts")}
@@ -142,12 +142,14 @@ const Budget = () => {
               </button>
             </div>
 
-            <button
-              className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md cursor-pointer w-full md:w-auto"
-              onClick={() => setShowAddService(true)}
-            >
-              + Agregar servicio
-            </button>
+            <div className="w-full md:w-auto">
+              <button
+                className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md w-full md:w-auto"
+                onClick={() => setShowAddService(true)}
+              >
+                + Agregar servicio
+              </button>
+            </div>
           </div>
 
           {/* Tabla con scroll horizontal */}
