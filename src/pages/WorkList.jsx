@@ -55,7 +55,7 @@ const WorkList = () => {
           toCharge += budget.total_ars;
         }
 
-        if (budget.state === "pagado") {
+        if (budget.state === "terminado" || budget.state === "pagado") {
           pendingPickup++;
         }
       });
@@ -70,10 +70,13 @@ const WorkList = () => {
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
-    if (destination.droppableId === 'pagado') {
-      try {
-        const movedBudget = columns[source.droppableId].find(b => b._id === draggableId);
+    const from = source.droppableId;
+    const to = destination.droppableId;
 
+    const movedBudget = columns[from].find(b => b._id === draggableId);
+
+    if (to === 'pagado') {
+      try {
         await axios.post('http://localhost:4000/api/cash/flow', {
           type: 'ingreso',
           amount: Number(movedBudget.total_ars),
@@ -84,47 +87,42 @@ const WorkList = () => {
       }
     }
 
-    const from = source.droppableId;
-    const to = destination.droppableId;
-    const moved = [...columns[from]];
-    const [item] = moved.splice(source.index, 1);
-
     // Update backend
-    await updateBudgetState(item._id, { state: to });
+    await updateBudgetState(movedBudget._id, { state: to });
 
-    // Actualizar columnas
-    setColumns((cols) => {
-      const next = { ...cols };
-      next[from] = moved;
-
-      if (to !== "retirado") {
-        next[to] = [...cols[to], {...item, state: to}];
-      }
-      return next;
+    // Actualizar columnas (en un solo set)
+    setColumns(prev => {
+      const updated = {...prev};
+      updated[from] = [...updated[from]];
+      updated[from].splice(source.index, 1);
+      updated[to] = [...updated[to], {...movedBudget, state: to}];
+      return updated;
     });
 
     // Actualizar estadísticas
-    setStats((prev) => {
+    setStats(prev => {
       let newToCharge = prev.toCharge;
+      let newPendingPickup = prev.pendingPickup;
 
       if (from === "terminado") {
-        newToCharge -= Number(item.total_ars) || 0;
+        newToCharge -= Number(movedBudget.total_ars) || 0;
       }
       if (to === "terminado") {
-        newToCharge += Number(item.total_ars) || 0;
+        newToCharge += Number(movedBudget.total_ars) || 0;
+      }
+
+      if ((from === 'terminado' || from === 'pagado') && !(to === 'terminado' || to === 'pagado')) {
+        newPendingPickup--;
+      }
+      if (!(from === 'terminado' || from === 'pagado') && (to === 'terminado' || to === 'pagado')) {
+        newPendingPickup++;
       }
 
       return {
         ...prev,
-        toCharge: newToCharge
+        toCharge: newToCharge,
+        pendingPickup: newPendingPickup
       };
-    });
-
-    setColumns((cols) => {
-      const next = { ...cols };
-      next[from] = moved;
-      next[to] = [...cols[to], { ...item, state: to }];
-      return next;
     });
   };
 
