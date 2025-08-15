@@ -264,7 +264,7 @@ const Budget = () => {
                 Total Servicios (USD)
               </p>
               <p className="text-2xl font-bold text-green-500">
-                ${totalServicesUSD.toFixed(2)}
+                ${totalServicesUSD.toLocaleString("es-AR")}
               </p>
             </div>
             <div className="border border-gray-300 rounded-md py-4 px-6 bg-white text-center md:text-left">
@@ -275,7 +275,7 @@ const Budget = () => {
                 Total Repuestos (USD)
               </p>
               <p className="text-2xl font-bold text-blue-500">
-                ${totalBikepartsUSD.toFixed(2)}
+                ${totalBikepartsUSD.toLocaleString("es-AR")}
               </p>
             </div>
             <div className="border border-gray-300 rounded-md py-4 px-6 bg-white text-center md:text-left">
@@ -283,7 +283,7 @@ const Budget = () => {
                 Total Presupuesto (ARS)
               </p>
               <p className="text-2xl font-bold text-purple-500">
-                ${totalBudgetARS.toFixed(2)}
+                ${totalBudgetARS.toLocaleString("es-AR")}
               </p>
             </div>
           </div>

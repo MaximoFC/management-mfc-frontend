@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 const Cash = () => {
-  const [cash, setCash] = useState("");
+  const [cash, setCash] = useState({ balance: 0 });
   const [flow, setFlow] = useState([]);
   const [type, setType] = useState("");
   const [amount, setAmount] = useState("");
@@ -107,14 +107,14 @@ const Cash = () => {
       <div className="p-4 flex flex-col gap-4">
         <div className="flex flex-col bg-red-500 rounded-md shadow-xl h-40 text-white justify-between py-4 px-6 sm:px-10">
           <h2 className="text-xl">Dinero actual en caja</h2>
-          <p className="text-4xl font-bold">${cash.balance}</p>
+          <p className="text-4xl font-bold">${cash.balance.toLocaleString("es-AR")}</p>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <p className="flex gap-2 items-center">
-              <TfiStatsUp className="w-5 h-5" />+ ${totalIncome}{" "}
+              <TfiStatsUp className="w-5 h-5" />+ ${totalIncome.toLocaleString("es-AR")}{" "}
               {filterLabels[filter]}
             </p>
             <p className="flex gap-2 items-center">
-              <TfiStatsDown className="w-5 h-5" />- ${totalExpenses}{" "}
+              <TfiStatsDown className="w-5 h-5" />- ${totalExpenses.toLocaleString("es-AR")}{" "}
               {filterLabels[filter]}
             </p>
           </div>
@@ -142,7 +142,7 @@ const Cash = () => {
                 <IoArrowUpCircleOutline className="text-green-500 w-6 h-6" />
               </div>
               <p className="text-2xl text-green-500 font-bold">
-                ${totalIncome}
+                ${totalIncome.toLocaleString("es-AR")}
               </p>
               <p className="text-gray-500">{income.length} movimiento/s</p>
             </div>
@@ -153,7 +153,7 @@ const Cash = () => {
                 <IoArrowDownCircleOutline className="text-red-500 w-6 h-6" />
               </div>
               <p className="text-2xl text-red-500 font-bold">
-                ${totalExpenses}
+                ${totalExpenses.toLocaleString("es-AR")}
               </p>
               <p className="text-gray-500">{expenses.length} movimiento/s</p>
             </div>
@@ -163,7 +163,7 @@ const Cash = () => {
                 <h3>Balance {filterLabels[filter]}</h3>
                 <TfiStatsUp className="w-5 h-5" />
               </div>
-              <p className="text-2xl text-green-500 font-bold">${balance}</p>
+              <p className="text-2xl text-green-500 font-bold">${balance.toLocaleString("es-AR")}</p>
               <p className="text-gray-500">Diferencia ingresos - egresos</p>
             </div>
           </div>
@@ -257,7 +257,7 @@ const Cash = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-2">${mov.amount}</td>
+                    <td className="px-4 py-2">${mov.amount.toLocaleString("es-AR")}</td>
                     <td className="px-4 py-2">{mov.description}</td>
                     <td className="px-4 py-2">
                       {new Date(mov.date).toLocaleDateString()}
