@@ -126,6 +126,35 @@ const WorkList = () => {
     });
   };
 
+  const handlePrintTicket = async (budget) => {
+    try {
+      const payload = {
+        client: {
+          name: `${budget.bike_id?.current_owner_id?.name || ""} ${budget.bike_id?.current_owner_id?.surname || ""}`,
+          mobileNum: budget.bike_id?.current_owner_id?.mobileNum || "-"
+        },
+        services: budget.services || [],
+        total_ars: budget.total_ars || 0
+      };
+
+      const response = await axios.post(
+        "http://localhost:4000/api/tickets/generate",
+        payload,
+        { responseType: "blob" }
+      );
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ticket_${payload.client.name}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error generating ticket: ", error.message);
+    }
+  }
+
   return (
     <Layout>
       <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-6">
@@ -202,6 +231,13 @@ const WorkList = () => {
                           <div className="text-xs text-gray-500">
                             Ingresó el {new Date(budget.creation_date).toLocaleDateString()}
                           </div>
+
+                          <button
+                            onClick={() => handlePrintTicket(budget)}
+                            className="mt-2 w-full bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded cursor-pointer"
+                          >
+                            Imprimir ticket
+                          </button>
                         </div>
                       )}
                     </Draggable>
