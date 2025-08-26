@@ -140,11 +140,16 @@ const ClientDetail = () => {
                                 <ul className="mt-1 space-y-1">
                                     {budgets
                                         .filter(b => b.bike_id && b.bike_id._id === bike._id)
+                                        .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date))
                                         .map((item) => (
-                                            <li key={item._id} className="text-sm text-gray-700">
+                                            <li 
+                                                key={item._id}
+                                                className="text-sm text-gray-700 border rounded-md p-3 shadow-sm bg-gray-50"
+                                            >
                                                 <p>{new Date(item.creation_date).toLocaleDateString()}</p>
-                                                <p>{item.description || "Sin descripción"}</p>
-                                                <p>${item.total_usd || 0}</p>
+                                                <p>Cotización utilizada: ${item.dollar_rate_used || 0}</p>
+                                                <p>Total en dólares: ${item.total_usd || 0}</p>
+                                                <p>Total en pesos: ${item.total_ars || 0} (Services + repuestos)</p>
                                                 <p>Estado: {item.state}</p>
 
                                                 {item.services?.length > 0 && (
@@ -152,6 +157,15 @@ const ClientDetail = () => {
                                                         {item.services.map(service => (
                                                             <li key={service._id}>
                                                                 {service.name} - ${service.price_usd}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                {item.parts?.length > 0 && (
+                                                    <ul className="text-xs text-gray-600 mt-1 ml-4 list-disc list-inside">
+                                                        {item.parts.map(part => (
+                                                            <li key={part._id}>
+                                                                {part.description} ({part.amount}) - ${part.subtotal_usd}
                                                             </li>
                                                         ))}
                                                     </ul>
