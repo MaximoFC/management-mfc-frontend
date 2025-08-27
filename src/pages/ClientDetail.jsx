@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import ClientBikesModal from "../components/ClientBikesModal";
 
+const ITEMS_PER_PAGE = 5;
+
 const ClientDetail = () => {
     const { id } = useParams();
 
@@ -16,6 +18,8 @@ const ClientDetail = () => {
     const [editMobileNum, setEditMobileNum] = useState('');
     const [saving, setSaving] = useState('');
     const [budgets, setBudgets] = useState([]);
+    const [selectedBike, setSelectedBike] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     // Fetch cliente + bicicletas
     const fetchClientData = async () => {
@@ -29,11 +33,18 @@ const ClientDetail = () => {
         setEditSurname(data.client.surname);
         setEditMobileNum(data.client.mobileNum);
 
-        if (data.bikes) setBikes(data.bikes);
-        else {
+        if (data.bikes) {
+            setBikes(data.bikes);
+            if (!selectedBike && data.bikes.length > 0) {
+                setSelectedBike(data.bikes[0]._id);
+            }
+        } else {
             const resBikes = await fetch(`http://localhost:4000/api/bikes?client_id=${id}`);
             const bikesData = await resBikes.json();
             setBikes(bikesData);
+            if (!selectedBike && bikesData.length > 0) {
+                setSelectedBike(bikesData[0]._id);
+            }
         }
         } catch (e) {
             setError(e.message);
@@ -85,6 +96,14 @@ const ClientDetail = () => {
         }
     };
 
+    const filteredBudgets = budgets
+        .filter(b => b.bike_id && b.bike_id._id === selectedBike)
+        .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
+
+    const totalPage = Math.ceil(filteredBudgets.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedBudgets = filteredBudgets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
     return (
         <Layout>
             <div className="p-8 flex flex-col gap-4 max-w-4xl mx-auto">
@@ -130,54 +149,88 @@ const ClientDetail = () => {
                 {bikes.length === 0 ? (
                     <p className="text-gray-600">Sin bicicletas registradas.</p>
                 ) : (
-                    bikes.map(bike => (
-                        <div key={bike._id} className="border rounded p-4 mt-4 bg-white shadow">
-                            <h3 className="text-lg font-semibold">{bike.brand} {bike.model} ({bike.color})</h3>
-                            <p>Estado: {bike.active ? "Activa" : "Deshabilitada"}</p>
+                    <div className="mt-4">
+                        <div className="flex gap-2">
+                            {bikes.map(bike => (
+                                <button
+                                    key={bike._id}
+                                    onClick={() => {
+                                        setSelectedBike(bike._id);
+                                        setCurrentPage(1);
+                                    }}
+                                    className={`flex flex-col items-start p-4 rounded-lg shadow-md border w-56 text-left transition cursor-pointer ${
+                                        selectedBike === bike._id
+                                            ? "border-b-2 border-red-500 font-semibold"
+                                            : "text-gray-600"
+                                    }`}
+                                >
+                                    <h4>
+                                        {bike.brand} {bike.model} ({bike.color})
+                                    </h4>
+                                    <p
+                                        className={`text-xs mt-1 px-2 py-1 rounded-full ${
+                                            bike.active
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-gray-200 text-gray-600"
+                                        }`}
+                                    >
+                                        {bike.active ? "Activa" : "Deshabilitada"}
+                                    </p>
+                                </button>
+                            ))}
+                        </div>
 
-                            <h4 className="mt-2 font-medium">Historial de arreglos</h4>
-                            {budgets.filter(b => b.bike_id && b.bike_id._id === bike._id).length > 0 ? (
-                                <ul className="mt-1 space-y-1">
-                                    {budgets
-                                        .filter(b => b.bike_id && b.bike_id._id === bike._id)
-                                        .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date))
-                                        .map((item) => (
-                                            <li 
-                                                key={item._id}
-                                                className="text-sm text-gray-700 border rounded-md p-3 shadow-sm bg-gray-50"
-                                            >
-                                                <p>{new Date(item.creation_date).toLocaleDateString()}</p>
-                                                <p>Cotización utilizada: ${item.dollar_rate_used || 0}</p>
-                                                <p>Total en dólares: ${item.total_usd || 0}</p>
-                                                <p>Total en pesos: ${item.total_ars || 0} (Services + repuestos)</p>
-                                                <p>Estado: {item.state}</p>
-
-                                                {item.services?.length > 0 && (
-                                                    <ul className="text-xs text-gray-600 mt-1 ml-4 list-disc list-inside">
-                                                        {item.services.map(service => (
-                                                            <li key={service._id}>
-                                                                {service.name} - ${service.price_usd}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                )}
-                                                {item.parts?.length > 0 && (
-                                                    <ul className="text-xs text-gray-600 mt-1 ml-4 list-disc list-inside">
-                                                        {item.parts.map(part => (
-                                                            <li key={part._id}>
-                                                                {part.description} ({part.amount}) - ${part.subtotal_usd}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                )}
-                                            </li>
-                                        ))}
-                                </ul>
-                            ) : (
+                        <div className="mt-4">
+                            {filteredBudgets.length === 0 ? (
                                 <p className="text-sm text-gray-500">Sin historial de arreglos</p>
+                            ) : (
+                                <ul className="space-y-2">
+                                    {paginatedBudgets.map(item => (
+                                        <li
+                                            key={item._id}
+                                            className="text-sm text-gray-700 border rounded-md p-3 shadow-sm bg-gray-50"
+                                        >
+                                            <p>{new Date(item.creation_date).toLocaleDateString()}</p>
+                                            <p>Cotización utilizada: ${item.dollar_rate_used || 0}</p>
+                                            <p>Total en dólares: ${item.total_usd || 0}</p>
+                                            <p>Total en pesos: ${item.total_ars || 0} (Services + repuestos)</p>
+                                            <p>Estado: {item.state}</p>
+
+                                            {item.services?.length > 0 && (
+                                                <ul>
+                                                    {item.services.map(service => (
+                                                        <li>
+                                                            {service.name} - ${service.price_usd}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+
+                            {totalPage > 1 && (
+                                <div className="flex gap-2 mt-4 justify-center">
+                                    <button
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(p => p - 1)}
+                                        className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 cursor-pointer text-white"
+                                    >
+                                        Anterior
+                                    </button>
+                                    <span className="text-md">Página {currentPage} de {totalPage}</span>
+                                    <button
+                                        disabled={currentPage === totalPage}
+                                        onClick={() => setCurrentPage(p => p + 1)}
+                                        className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 cursor-pointer text-white"
+                                    >
+                                        Siguiente
+                                    </button>
+                                </div>
                             )}
                         </div>
-                    ))
+                    </div>
                 )}
 
                 {showModal && (
