@@ -5,6 +5,11 @@ import { fetchBikeparts } from "../services/bikepartService";
 import BudgetModal from "../components/BudgetModal";
 import AddServiceModal from "../components/AddServiceModal";
 import { fetchDollarRate } from "../services/utilsService";
+import WarrantyMatchModal from "../components/WarrantyMatchModal";
+import { getActiveWarranties } from "../services/warrantyService";
+import { fetchClients } from "../services/clientService";
+import { fetchBikesByClient } from "../services/bikeService";
+import axios from "axios";
 
 const Budget = () => {
   const [tab, setTab] = useState("services");
@@ -15,6 +20,68 @@ const Budget = () => {
   const [showModal, setShowModal] = useState(false);
   const [showAddService, setShowAddService] = useState(false);
   const [dollarRate, setDollarRate] = useState(null);
+  const [clientId, setClientId] = useState(null);
+  const [bikeId, setBikeId] = useState(null);
+  const [warrantyMatches, setWarrantyMatches] = useState([]);
+  const [showWarrantyModal, setShowWarrantyModal] = useState(false);
+  const [coveredServices, setCoveredServices] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [bikes, setBikes] = useState([]);
+
+  const handleConfirmBudget = async () => {
+    try {
+      await axios.post("http://localhost:4000/api/budgets", {
+        bike_id: bikeId,
+        employee_id: clientId,
+        services: selectedServices.map(id => ({
+          service_id: id,
+        })),
+        bikeparts: selectedBikeparts.map(bp => ({
+          bikepart_id: bp.bikepart_id,
+          amount: bp.amount,
+        })),
+        applyWarranty: coveredServices,
+      });
+
+
+      alert("Presupuesto generado con éxito ✅");
+      setShowModal(false);
+      setSelectedServices([]);
+      setSelectedBikeparts([]);
+      setCoveredServices([]);
+    } catch (err) {
+      console.error(err);
+      alert("Error al generar el presupuesto ❌");
+    }
+  };
+
+  const checkWarrantyMatch = async () => {
+    if (!clientId || !bikeId || selectedServices.length === 0) return;
+
+    try {
+      const warranties = await getActiveWarranties(clientId, bikeId);
+      const coveredIds = warranties.map(w => w.serviceId);
+      
+      const matches = selectedServices
+        .filter(id => coveredIds.includes(id))
+        .map(id => {
+          const warranty = warranties.find(w => w.serviceId === id);
+          return {
+          serviceId: id,
+          name: services.find(s => s._id === id).name,
+          endDate: warranty?.endDate
+        }
+        });
+
+
+      if (matches.length > 0) {
+        setWarrantyMatches(matches);
+        setShowWarrantyModal(true);
+      }
+    } catch (err) {
+      console.error("Error al verificar garantías:", err);
+    }
+  };
 
   useEffect(() => {
     fetchServices().then(setServices);
@@ -22,7 +89,47 @@ const Budget = () => {
     fetchDollarRate()
       .then((rate) => setDollarRate(rate))
       .catch(() => setDollarRate(0));
+    fetchClients().then(setClients);
   }, []);
+
+  useEffect(() => {
+    if (clientId) {
+      fetchBikesByClient(clientId).then(setBikes);
+    } else {
+      setBikes([]);
+      setBikeId(null);
+    }
+  }, [clientId]);
+
+  const handleGenerateBudget = () => {
+  // Solo verificamos garantías aquí, al generar presupuesto
+  if (!clientId || !bikeId) {
+    alert("Seleccione cliente y bicicleta");
+    return;
+  }
+
+  getActiveWarranties(clientId, bikeId).then((warranties) => {
+    const coveredIds = warranties.map(w => w.serviceId);
+    const matches = selectedServices
+      .filter(id => coveredIds.includes(id))
+      .map(id => {
+        const warranty = warranties.find(w => w.serviceId === id);
+        const service = services.find(s => s._id === id);
+        return {
+          serviceId: id,
+          name: service?.name,
+          endDate: warranty?.endDate
+        };
+      });
+
+    if (matches.length > 0) {
+      setWarrantyMatches(matches);
+      setShowWarrantyModal(true); // ✅ ahora solo aparece una vez
+    } else {
+      setShowModal(true);
+    }
+  });
+};
 
   const toggleService = (id) => {
     setSelectedServices((prev) =>
@@ -57,7 +164,10 @@ const Budget = () => {
 
   const totalServicesUSD = services
     .filter((s) => selectedServices.includes(s._id))
-    .reduce((acc, s) => acc + Number(s.price_usd), 0);
+    .reduce((acc, s) => {
+      const isCovered = coveredServices.includes(s._id);
+      return acc + (isCovered ? 0 : Number(s.price_usd));
+  }, 0);
 
   const totalBikepartsUSD = selectedBikeparts.reduce((acc, item) => {
     const part = bikeparts.find((p) => p._id === item.bikepart_id);
@@ -119,6 +229,36 @@ const Budget = () => {
     <Layout>
       <div className="max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-6">
         <div className="flex flex-col gap-6 bg-white border border-gray-200 rounded-md p-4 md:p-6">
+
+          <div className="flex gap-4">
+            <select
+              className="border p-2 rounded flex-1"
+              value={clientId || ""}
+              onChange={e => setClientId(e.target.value)}
+            >
+              <option value="">-- Seleccioná cliente --</option>
+                {clients.map(c => (
+                  <option key={c._id} value={c._id}>
+                    {c.name} {c.surname}
+                  </option>
+                ))}
+            </select>
+
+            <select
+              className="border p-2 rounded flex-1"
+              value={bikeId || ""}
+              onChange={e => setBikeId(e.target.value)}
+              disabled={!clientId}
+            >
+              <option value="">-- Seleccioná bici --</option>
+                {bikes.map(b => (
+                  <option key={b._id} value={b._id}>
+                    {b.brand} {b.model}
+                  </option>
+                ))}
+            </select>
+          </div>
+
           <h2 className="text-2xl font-bold">Crear presupuesto</h2>
 
           {/* Tabs y botón, column en móvil, fila en md */}
@@ -168,7 +308,11 @@ const Budget = () => {
                   {services.map((s) => (
                     <tr
                       key={s._id}
-                      className="border-t border-gray-200 hover:bg-gray-50 h-16"
+                      className={`border-t border-gray-200 h-16 ${
+                        warrantyMatches.some(w => w.serviceId === s._id)
+                        ? "bg-green-100"
+                        : "hover:bg-gray-50"
+                      }`}
                     >
                       <td className="py-3 px-6">
                         <input
@@ -296,21 +440,54 @@ const Budget = () => {
           </button>
           <button
             className="bg-red-500 hover:bg-red-700 text-white p-3 rounded-md cursor-pointer w-full md:w-auto"
-            onClick={() => setShowModal(true)}
+            onClick={handleGenerateBudget}
           >
             Generar presupuesto
           </button>
         </div>
 
+        {showWarrantyModal && (
+          <WarrantyMatchModal
+            warranties={warrantyMatches}
+            onApply={selectedIds => {
+              setCoveredServices(selectedIds);
+              setShowWarrantyModal(false);
+              setShowModal(true);
+            }}
+            onCancel={() => {
+              setCoveredServices([]);
+              setShowWarrantyModal(false);
+              setShowModal(true);
+            }}
+          />
+        )}
+
         {showModal && (
           <BudgetModal
             closeModal={() => setShowModal(false)}
-            selectedServices={selectedServices.map((id) => ({
-              service_id: id,
-            }))}
-            selectedBikeparts={selectedBikeparts}
+            selectedServices={services
+              .filter(s => selectedServices.includes(s._id))
+              .map(s => ({
+                service_id: s._id,
+                name: s.name,
+                price: Number(s.price_usd),
+                covered: coveredServices.includes(s._id),
+              }))
+            }
+            selectedBikeparts={selectedBikeparts.map(bp => {
+              const part = bikeparts.find(p => p._id === bp.bikepart_id);
+              return {
+                bikepart_id: bp.bikepart_id,
+                name: part?.description || "Repuesto",
+                price: Number(part?.price_usd || 0),
+                amount: bp.amount,
+              };
+            })}
+            totalUSD={totalBudgetUSD}
+            onConfirm={handleConfirmBudget}
           />
         )}
+
 
         {showAddService && (
           <AddServiceModal
@@ -321,6 +498,9 @@ const Budget = () => {
             }}
           />
         )}
+
+        
+
       </div>
     </Layout>
   );

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { fetchBudgets, updateBudgetState } from "../services/budgetService";
 import axios from "axios";
+import WarrantyModal from "../components/WarrantyModal";
 
 const STATES = ["iniciado", "en proceso", "terminado", "pagado", "retirado"];
 const STATE_LABELS = {
@@ -22,6 +23,8 @@ const STATE_COLORS = {
 };
 
 const WorkList = () => {
+  const [showWarrantyModal, setShowWarrantyModal] = useState(false);
+  const [pendingWarrantyBudget, setPendingWarrantyBudget] = useState(null);
   const [stats, setStats] = useState({
     todayCount: 0,
     pendingPickup: 0,
@@ -75,6 +78,17 @@ const WorkList = () => {
 
     const movedBudget = columns[from].find(b => b._id === draggableId);
 
+    let warranty = null;
+    if (to === "terminado") {
+      const confirmWarranty = window.confirm("¿Este presupuesto tendrá garantía?");
+      if (confirmWarranty) {
+        setPendingWarrantyBudget(movedBudget);
+        setShowWarrantyModal(true);
+      } else {
+        await updateBudgetState(movedBudget._id, { state: to });
+      }
+    }
+
     if (to === 'pagado') {
       try {
         await axios.post('http://localhost:4000/api/cash/flow', {
@@ -88,14 +102,14 @@ const WorkList = () => {
     }
 
     // Update backend
-    await updateBudgetState(movedBudget._id, { state: to });
+    await updateBudgetState(movedBudget._id, { state: to, warranty });
 
     // Actualizar columnas (en un solo set)
     setColumns(prev => {
-      const updated = {...prev};
+      const updated = { ...prev };
       updated[from] = [...updated[from]];
       updated[from].splice(source.index, 1);
-      updated[to] = [...updated[to], {...movedBudget, state: to}];
+      updated[to] = [...updated[to], { ...movedBudget, state: to, warranty }];
       return updated;
     });
 
@@ -276,6 +290,26 @@ const WorkList = () => {
           </Droppable>
         </DragDropContext>
       </div>
+      
+      {showWarrantyModal && pendingWarrantyBudget && (
+        <WarrantyModal
+          services={pendingWarrantyBudget.services}
+          onCancel={() => {
+            setShowWarrantyModal(false);
+            setPendingWarrantyBudget(null);
+          }}
+          onConfirm={async (selectedServices) => {
+          await updateBudgetState(pendingWarrantyBudget._id, {
+            state: "terminado",
+            giveWarranty: true,
+            warrantyServices: selectedServices
+          });
+          setShowWarrantyModal(false);
+          setPendingWarrantyBudget(null);
+        }}
+        />
+      )}
+
       </div>
     </Layout>
   );

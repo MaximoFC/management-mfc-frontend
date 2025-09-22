@@ -4,6 +4,7 @@ import { GoPeople, GoTools } from "react-icons/go";
 import { BsBox2 } from "react-icons/bs";
 import { MdOutlineAttachMoney } from "react-icons/md";
 import { TfiClipboard } from "react-icons/tfi";
+import { BsClipboardCheck } from "react-icons/bs";
 
 const Sidebar = () => {
   const { pathname } = useLocation();
@@ -27,6 +28,9 @@ const Sidebar = () => {
         </Link>
         <Link to="/presupuestos" className={linkClasses("/presupuestos")}>
           <TfiClipboard className="w-5 h-5" /> Presupuestos
+        </Link>
+        <Link to="/garantias" className={linkClasses("/garantias")}>
+          <BsClipboardCheck className="w-6 h-6" /> Garantías
         </Link>
         <Link to="/repuestos" className={linkClasses("/repuestos")}>
           <BsBox2 className="w-5 h-5" /> Inventario

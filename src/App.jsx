@@ -14,6 +14,8 @@ import HomeRedirect from './components/HomeRedirect';
 import Notifications from './pages/Notifications';
 import NewClient from './pages/NewClient';
 import ClientDetail from './pages/ClientDetail';
+import BudgetDetail from './pages/BudgetDetail';
+import Warranties from './pages/Warranties';
 
 function App() {
 
@@ -112,18 +114,26 @@ function App() {
         }
       />
       <Route
-        path='/presupuestos'
-        element={
-          <ProtectedRoute>
-            <Budget />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path='/clientes/:id'
         element={
           <ProtectedRoute>
             <ClientDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/garantias'
+        element={
+          <ProtectedRoute>
+            <Warranties />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/garantias/:id'
+        element={
+          <ProtectedRoute>
+            <BudgetDetail />
           </ProtectedRoute>
         }
       />
