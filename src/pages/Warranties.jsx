@@ -22,9 +22,6 @@ const Warranties = () => {
         fetchWarranties();
     }, []);
 
-    if (loading) return <p>Cargando garantías...</p>;
-    if (!budgets.length) return <p>No hay garantías activas.</p>;
-
     const now = new Date();
 
     return (
@@ -32,7 +29,12 @@ const Warranties = () => {
             <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Garantías activas</h1>
 
-            {budgets.map((budget) => (
+            {loading ? (
+                <p>Cargando garantías...</p>
+            ) : !budgets.length ? (
+                <p>No hay garantías activas</p>
+            ) : (
+                budgets.map((budget) => (
                 <div
                     key={budget._id}
                     className="border rounded-lg p-4 mb-4 shadow-sm bg-white"
@@ -85,7 +87,8 @@ const Warranties = () => {
                         })}
                     </div>
                 </div>
-            ))}
+            ))
+            )}
         </div>
         </Layout>
     );
