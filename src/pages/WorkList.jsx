@@ -169,6 +169,46 @@ const WorkList = () => {
     }
   }
 
+  const handlePrintForm = async (budget) => {
+  try {
+    const payload = {
+      workshop: {
+        name: "Mecánica Facundo Callejas",
+        address: "Paraguay 1674, Yerba Buena",
+        mobileNum: "+54 9 381 547-5600"
+      },
+      client: {
+        name: `${budget.bike_id?.current_owner_id?.name || ""} ${budget.bike_id?.current_owner_id?.surname || ""}`,
+        dni: budget.bike_id?.current_owner_id?.dni || "-",
+        mobileNum: budget.bike_id?.current_owner_id?.mobileNum || "-"
+      },
+      bike: {
+        brand: budget.bike_id?.brand || "-",
+        model: budget.bike_id?.model || "-",
+        frameNumber: budget.bike_id?.frameNumber || "-"
+      },
+      date: new Date().toLocaleDateString("es-AR")
+    };
+
+    const response = await axios.post(
+      "http://localhost:4000/api/tickets/form",
+      payload,
+      { responseType: "blob" }
+    );
+
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `formulario_${payload.client.name}.pdf`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error generating form: ", error.message);
+  }
+};
+
+
   return (
     <Layout>
       <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-6">
@@ -251,6 +291,13 @@ const WorkList = () => {
                             className="mt-2 w-full bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded cursor-pointer"
                           >
                             Imprimir ticket
+                          </button>
+
+                          <button
+                            onClick={() => handlePrintForm(budget)}
+                            className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-1 px-2 rounded cursor-pointer"
+                          >
+                            Imprimir formulario
                           </button>
                         </div>
                       )}
