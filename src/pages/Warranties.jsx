@@ -11,7 +11,7 @@ const Warranties = () => {
         const fetchWarranties = async () => {
             try {
                 //Solo presupuestos con garantías activas
-                const res = await axios.get("http://localhost:4000/api/budgets?warranty=active");
+                const res = await axios.get("http://localhost:4000/api/budgets/active-warranties");
                 setBudgets(res.data);
             } catch (err) {
                 console.error("Error fetching warranties", err);
