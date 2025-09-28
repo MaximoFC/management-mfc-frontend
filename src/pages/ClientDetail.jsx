@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import ClientBikesModal from "../components/ClientBikesModal";
+import { updateClient, fetchClientById } from "../services/clientService";
+import { fetchBudgetsByClient } from "../services/budgetService";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -10,42 +12,37 @@ const ClientDetail = () => {
 
     const [client, setClient] = useState(null);
     const [bikes, setBikes] = useState([]);
+    const [budgets, setBudgets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showModal, setShowModal] = useState(false);
+
     const [editName, setEditName] = useState('');
     const [editSurname, setEditSurname] = useState('');
     const [editMobileNum, setEditMobileNum] = useState('');
     const [saving, setSaving] = useState('');
-    const [budgets, setBudgets] = useState([]);
+
+    const [showModal, setShowModal] = useState(false);
     const [selectedBike, setSelectedBike] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
 
     // Fetch cliente + bicicletas
-    const fetchClientData = async () => {
-    setLoading(true);
-    try {
-        const res = await fetch(`http://localhost:4000/api/clients/${id}`);
-        if (!res.ok) throw new Error("Error al obtener el cliente");
-        const data = await res.json();
-        setClient(data.client);
-        setEditName(data.client.name);
-        setEditSurname(data.client.surname);
-        setEditMobileNum(data.client.mobileNum);
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const { client, bikes } = await fetchClientById(id);
+            const budgetsData = await fetchBudgetsByClient(id);
 
-        if (data.bikes) {
-            setBikes(data.bikes);
-            if (!selectedBike && data.bikes.length > 0) {
-                setSelectedBike(data.bikes[0]._id);
+            setClient(client);
+            setBikes(bikes);
+            setBudgets(budgetsData);
+
+            setEditName(client.name);
+            setEditSurname(client.surname);
+            setEditMobileNum(client.mobileNum);
+
+            if (!selectedBike && bikes.length > 0) {
+                setSelectedBike(bikes[0]._id);
             }
-        } else {
-            const resBikes = await fetch(`http://localhost:4000/api/bikes?client_id=${id}`);
-            const bikesData = await resBikes.json();
-            setBikes(bikesData);
-            if (!selectedBike && bikesData.length > 0) {
-                setSelectedBike(bikesData[0]._id);
-            }
-        }
         } catch (e) {
             setError(e.message);
         } finally {
@@ -53,51 +50,32 @@ const ClientDetail = () => {
         }
     };
 
-    const fetchBudgets = async () => {
-        try {
-            const res = await fetch(`http://localhost:4000/api/budgets/client/${id}`);
-            if (!res.ok) throw new Error('Error fetching budgets');
-            const data = await res.json();
-            setBudgets(data.budgets);
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
     useEffect(() => {
-        fetchClientData();
-        fetchBudgets();
+        fetchData();
     }, [id]);
 
-    if (loading) return <Layout><div>Cargando...</div></Layout>;
-    if (error) return <Layout><div className="text-red-500">Error: {error}</div></Layout>;
-    if (!client) return <Layout><div>No se encontró el cliente</div></Layout>;
-
     const handleSaveChanges = async () => {
-        setSaving(true);
         try {
-            const res = await fetch(`http://localhost:4000/api/clients/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: editName,
-                    surname: editSurname,
-                    mobileNum: editMobileNum
-                })
+            setSaving(true);
+            await updateClient(id, {
+                name: editName,
+                surname: editSurname,
+                mobileNum: editMobileNum
             });
-
-            if (!res.ok) throw new Error('Error saving changes');
-
-            await fetchClientData();
+            await fetchData();
         } catch (e) {
-            alert(e.message);
+            setError(e.message || "Error cargando datos del cliente");
         } finally {
             setSaving(false);
         }
     };
 
+    if (loading) return <Layout><div>Cargando...</div></Layout>;
+    if (error) return <Layout><div className="text-red-500">Error: {error}</div></Layout>;
+    if (!client) return <Layout><div>No se encontró el cliente</div></Layout>;
+
     const filteredBudgets = budgets
-        .filter(b => b.bike_id && b.bike_id._id === selectedBike)
+        .filter(b => b.bike_id?._id === selectedBike)
         .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
 
     const totalPage = Math.ceil(filteredBudgets.length / ITEMS_PER_PAGE);
@@ -238,7 +216,7 @@ const ClientDetail = () => {
                         client={client}
                         closeModal={() => {
                             setShowModal(false);
-                            fetchClientData(); // Refrescar datos tras cerrar modal
+                            fetchData(); // Refrescar datos tras cerrar modal
                         }}
                     />
                 )}

@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import { fetchClients } from "../services/clientService";
 import { useSearch } from "../context/SearchContext";
 import { useNavigate } from "react-router-dom";
+import { fetchBikesByClient } from "../services/bikeService";
 
 const ClientList = () => {
   const { searchTerm } = useSearch();
@@ -27,15 +28,8 @@ const ClientList = () => {
         const now = new Date();
         const clientsWithBikes = await Promise.all(
           data.map(async (client) => {
-            try {
-              const res = await fetch(
-                `http://localhost:4000/api/bikes?client_id=${client._id}`
-              );
-              const bikes = await res.json();
-              return { ...client, bikes };
-            } catch {
-              return { ...client, bikes: [] };
-            }
+            const bikes = await fetchBikesByClient(client._id);
+            return { ...client, bikes };
           })
         );
 
