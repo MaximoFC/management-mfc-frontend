@@ -6,10 +6,9 @@ import BudgetModal from "../components/BudgetModal";
 import AddServiceModal from "../components/AddServiceModal";
 import { fetchDollarRate } from "../services/utilsService";
 import WarrantyMatchModal from "../components/WarrantyMatchModal";
-import { getActiveWarranties } from "../services/warrantyService";
 import { fetchClients } from "../services/clientService";
 import { fetchBikesByClient } from "../services/bikeService";
-import axios from "axios";
+import { createBudget, getActiveWarranties, generateBudgetPdf } from "../services/budgetService";
 
 const Budget = () => {
   const [tab, setTab] = useState("services");
@@ -29,59 +28,28 @@ const Budget = () => {
   const [bikes, setBikes] = useState([]);
 
   const handleConfirmBudget = async () => {
-    try {
-      await axios.post("http://localhost:4000/api/budgets", {
-        bike_id: bikeId,
-        employee_id: clientId,
-        services: selectedServices.map(id => ({
-          service_id: id,
-        })),
-        bikeparts: selectedBikeparts.map(bp => ({
-          bikepart_id: bp.bikepart_id,
-          amount: bp.amount,
-        })),
-        applyWarranty: coveredServices,
-      });
+  try {
+    await createBudget({
+      bike_id: bikeId,
+      employee_id: clientId,
+      services: selectedServices.map(id => ({ service_id: id })),
+      bikeparts: selectedBikeparts.map(bp => ({
+        bikepart_id: bp.bikepart_id,
+        amount: bp.amount,
+      })),
+      applyWarranty: coveredServices,
+    });
 
-
-      alert("Presupuesto generado con éxito ✅");
-      setShowModal(false);
-      setSelectedServices([]);
-      setSelectedBikeparts([]);
-      setCoveredServices([]);
-    } catch (err) {
-      console.error(err);
-      alert("Error al generar el presupuesto ❌");
-    }
-  };
-
-  const checkWarrantyMatch = async () => {
-    if (!clientId || !bikeId || selectedServices.length === 0) return;
-
-    try {
-      const warranties = await getActiveWarranties(clientId, bikeId);
-      const coveredIds = warranties.map(w => w.serviceId);
-      
-      const matches = selectedServices
-        .filter(id => coveredIds.includes(id))
-        .map(id => {
-          const warranty = warranties.find(w => w.serviceId === id);
-          return {
-          serviceId: id,
-          name: services.find(s => s._id === id).name,
-          endDate: warranty?.endDate
-        }
-        });
-
-
-      if (matches.length > 0) {
-        setWarrantyMatches(matches);
-        setShowWarrantyModal(true);
-      }
-    } catch (err) {
-      console.error("Error al verificar garantías:", err);
-    }
-  };
+    alert("Presupuesto generado con éxito ✅");
+    setShowModal(false);
+    setSelectedServices([]);
+    setSelectedBikeparts([]);
+    setCoveredServices([]);
+  } catch (err) {
+    console.error(err);
+    alert("Error al generar el presupuesto ❌");
+  }
+};
 
   useEffect(() => {
     fetchServices().then(setServices);
@@ -102,34 +70,46 @@ const Budget = () => {
   }, [clientId]);
 
   const handleGenerateBudget = () => {
-  // Solo verificamos garantías aquí, al generar presupuesto
-  if (!clientId || !bikeId) {
-    alert("Seleccione cliente y bicicleta");
-    return;
-  }
-
-  getActiveWarranties(clientId, bikeId).then((warranties) => {
-    const coveredIds = warranties.map(w => w.serviceId);
-    const matches = selectedServices
-      .filter(id => coveredIds.includes(id))
-      .map(id => {
-        const warranty = warranties.find(w => w.serviceId === id);
-        const service = services.find(s => s._id === id);
-        return {
-          serviceId: id,
-          name: service?.name,
-          endDate: warranty?.endDate
-        };
-      });
-
-    if (matches.length > 0) {
-      setWarrantyMatches(matches);
-      setShowWarrantyModal(true); // ✅ ahora solo aparece una vez
-    } else {
-      setShowModal(true);
+    if (!clientId || !bikeId) {
+      alert("Seleccione cliente y bicicleta");
+      return;
     }
-  });
-};
+
+    getActiveWarranties(clientId, bikeId).then((warranties) => {
+      // Extraer todos los services con garantía activa
+      const activeServices = warranties.flatMap(b =>
+        b.services
+          .filter(s => s.warranty?.status === "activa")
+          .map(s => ({
+            serviceId: String(s.service_id._id || s.service_id),
+            endDate: s.warranty.endDate
+          }))
+      );
+
+      const coveredIds = activeServices.map(s => s.serviceId);
+
+      // Comparar con lo que seleccionó el usuario
+      const matches = selectedServices
+        .filter(id => coveredIds.includes(id))
+        .map(id => {
+          const service = services.find(s => s._id === id);
+          const warranty = activeServices.find(w => w.serviceId === id);
+          return {
+            serviceId: id,
+            name: service?.name,
+            endDate: warranty?.endDate
+          };
+        });
+
+      if (matches.length > 0) {
+        setWarrantyMatches(matches);
+        setShowWarrantyModal(true);   // ✅ ahora sí va a saltar
+      } else {
+        setShowModal(true);
+      }
+    });
+  };
+
 
   const toggleService = (id) => {
     setSelectedServices((prev) =>
@@ -190,7 +170,6 @@ const Budget = () => {
             qty: 1,
             price: Number(s.price_usd) * (dollarRate ?? 0)
           })),
-
         ...selectedBikeparts.map(bp => {
           const part = bikeparts.find(p => p._id === bp.bikepart_id);
           return {
@@ -203,26 +182,20 @@ const Budget = () => {
       total: totalBudgetARS
     };
 
-    const response = await fetch("http://localhost:4000/api/budgets/generate-pdf", {
-      method: 'POST',
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(budgetData)
-    });
-
-    if (!response.ok) {
+    try {
+      const blob = await generateBudgetPdf(budgetData);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "presupuesto.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
       alert("Error generando PDF");
-      return;
     }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "presupuesto.pdf";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
   };
 
   return (

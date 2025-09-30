@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
 import Layout from "../components/Layout";
+import { fetchBudgetById, updateBudgetState } from "../services/budgetService";
 
 const BudgetDetail = () => {
   const { id } = useParams();
@@ -9,28 +9,27 @@ const BudgetDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBudget = async () => {
+    const loadBudget = async () => {
       try {
-        const res = await axios.get(`http://localhost:4000/api/budgets/${id}`);
-        setBudget(res.data);
-        console.log(res.data.bike_id);
+        const data = await fetchBudgetById(id);
+        setBudget(data);
       } catch (err) {
-        console.error("Error fetching budget", err);
+        console.error("Error fetching budget: ", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchBudget();
+    loadBudget();
   }, [id]);
 
   const handleCheckupComplete = async (serviceId, checkupDate) => {
     try {
-      const res = await axios.put(`http://localhost:4000/api/budgets/${id}`, {
+      const data = await updateBudgetState(id, {
         action: "completeCheckup",
         serviceId,
-        checkupDate,
+        checkupDate
       });
-      setBudget(res.data);
+      setBudget(data);
     } catch (err) {
       console.error("Error updating checkup", err);
     }
