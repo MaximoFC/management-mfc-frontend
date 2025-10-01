@@ -1,16 +1,16 @@
 import Layout from "../components/Layout";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { IoAlertCircleOutline } from "react-icons/io5";
 import { FaRegCheckCircle } from "react-icons/fa";
+import { fetchNotifications, markNotificationAsSeen } from "../services/notificationService";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
 
   const loadNotifications = async () => {
     try {
-      const res = await axios.get("http://localhost:4000/api/notifications");
-      setNotifications(res.data);
+      const all = await fetchNotifications();
+      setNotifications(all);
     } catch (error) {
       console.error("Error loading notifications", error);
     }
@@ -27,7 +27,7 @@ const Notifications = () => {
 
   const markAsSeen = async (id) => {
     try {
-      await axios.put(`http://localhost:4000/api/notifications/${id}/seen`);
+      await markNotificationAsSeen(id);
       window.dispatchEvent(new Event("notifications-updated"));
       loadNotifications();
     } catch (error) {

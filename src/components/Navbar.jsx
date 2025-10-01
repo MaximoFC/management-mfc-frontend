@@ -4,8 +4,7 @@ import { IoIosNotificationsOutline } from "react-icons/io";
 import { useAuth } from "../context/AuthContext";
 import { useState, useEffect, useRef } from "react";
 import { useSearch } from "../context/SearchContext";
-import axios from "axios";
-import { HiMenu } from "react-icons/hi";
+import { fetchNotifications } from "../services/notificationService";
 
 const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
   const { employee, logout } = useAuth();
@@ -28,24 +27,22 @@ const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
   };
 
   useEffect(() => {
-    const fetchNotifications = () => {
-      axios
-        .get("http://localhost:4000/api/notifications")
-        .then((res) =>
-          setNotifications(res.data.filter((n) => !n.seen).slice(0, 3))
-        )
-        .catch((err) => {
-          setNotifications([]);
-          console.error("Error getting notifications", err);
-        });
+    const load = async () => {
+      try {
+        const all = await fetchNotifications();
+        setNotifications(all.filter((n) => !n.seen).slice(0, 3));
+      } catch (error) {
+        setNotifications([]);
+        console.error("Error getting notifications: ", error);
+      }
     };
 
-    fetchNotifications();
+    load();
 
-    const listener = () => fetchNotifications();
-    window.addEventListener("notifications-updated", listener);
+      const listener = () => load();
+      window.addEventListener("notifications-updated", listener);
 
-    return () => window.removeEventListener("notifications-updated", listener);
+      return () => window.removeEventListener("notifications-updated", listener);
   }, []);
 
   useEffect(() => {
