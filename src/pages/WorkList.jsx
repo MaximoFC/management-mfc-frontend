@@ -2,8 +2,9 @@ import Layout from "../components/Layout";
 import { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { fetchBudgets, updateBudgetState } from "../services/budgetService";
-import axios from "axios";
 import WarrantyModal from "../components/WarrantyModal";
+import { createFlow } from "../services/cashService";
+import axios from "axios";
 
 const STATES = ["iniciado", "en proceso", "terminado", "pagado", "retirado"];
 const STATE_LABELS = {
@@ -91,7 +92,7 @@ const WorkList = () => {
 
     if (to === 'pagado') {
       try {
-        await axios.post('http://localhost:4000/api/cash/flow', {
+        await createFlow('http://localhost:4000/api/cash/flow', {
           type: 'ingreso',
           amount: Number(movedBudget.total_ars),
           description: `Cobro de presupuesto de ${movedBudget.bike_id?.current_owner_id?.name || '-'} ${movedBudget.bike_id?.current_owner_id?.surname || '-'}`

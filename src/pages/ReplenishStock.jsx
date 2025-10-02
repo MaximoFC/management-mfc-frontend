@@ -1,8 +1,8 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SpareForm from "../components/SpareForm";
 import { updateBikepart, getBikepartById } from "../services/bikepartService";
+import { createFlow } from "../services/cashService";
 
 const ReplenishStock = () => {
     const { id } = useParams();
@@ -20,7 +20,7 @@ const ReplenishStock = () => {
         try {
             await updateBikepart(id, { ...spare, stock: updatedStock });
 
-            await axios.post('http://localhost:4000/api/cash/flow', {
+            await createFlow({
                 type: 'egreso',
                 amount: totalCost,
                 description: `Reposición de stock: ${spare.description}`

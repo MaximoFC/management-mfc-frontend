@@ -1,7 +1,7 @@
-import axios from "axios";
 import SpareForm from "../components/SpareForm";
 import { useNavigate } from "react-router-dom";
 import { createBikepart } from "../services/bikepartService";
+import { createFlow } from "../services/cashService";
 
 const StockEntryForm = () => {
     const navigate = useNavigate();
@@ -12,7 +12,7 @@ const StockEntryForm = () => {
         try {
             await createBikepart(data);
 
-            await axios.post('http://localhost:4000/api/cash/flow', {
+            await createFlow('http://localhost:4000/api/cash/flow', {
                 type: 'egreso',
                 amount: totalCost,
                 description: `Compra de nuevo repuesto: ${data.description}`
