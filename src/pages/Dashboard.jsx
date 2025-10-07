@@ -125,7 +125,7 @@ const RecentWorks = ({ trabajos }) => (
                 <p className="p-1 rounded-md bg-blue-200 text-sm capitalize">
                   {t.state || "En proceso"}
                 </p>
-                <p>${t.total_usd?.toLocaleString("es-AR") || 0}</p>
+                <p>${t.total_ars?.toLocaleString("es-AR") || 0}</p>
                 <p className="text-gray-600 text-sm">
                   {new Date(t.creation_date).toLocaleDateString("es-AR")}
                 </p>
