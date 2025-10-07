@@ -40,14 +40,14 @@ const Budget = () => {
       applyWarranty: coveredServices,
     });
 
-    alert("Presupuesto generado con éxito ✅");
+    alert("Presupuesto generado con éxito");
     setShowModal(false);
     setSelectedServices([]);
     setSelectedBikeparts([]);
     setCoveredServices([]);
   } catch (err) {
     console.error(err);
-    alert("Error al generar el presupuesto ❌");
+    alert("Error al generar el presupuesto");
   }
 };
 
@@ -103,7 +103,7 @@ const Budget = () => {
 
       if (matches.length > 0) {
         setWarrantyMatches(matches);
-        setShowWarrantyModal(true);   // ✅ ahora sí va a saltar
+        setShowWarrantyModal(true);   // ahora sí va a saltar
       } else {
         setShowModal(true);
       }
