@@ -23,6 +23,7 @@ function App() {
     <Routes>
       <Route path='/' element={<HomeRedirect />} />
       <Route path='/login' element={<Login />} />
+      <Route path='*' element={<Navigate to="/login" replace />} />
 
       {/* Rutas protegidas */}
       <Route

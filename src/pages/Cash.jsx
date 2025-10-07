@@ -5,7 +5,7 @@ import {
   IoArrowDownCircleOutline,
 } from "react-icons/io5";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { getBalance, getFlows, createFlow } from "../services/cashService";
 
 const Cash = () => {
   const [cash, setCash] = useState({ balance: 0 });
@@ -16,6 +16,7 @@ const Cash = () => {
   const [showModal, setShowModal] = useState(false);
   const [filter, setFilter] = useState("today");
   const [currentPage, setCurrentPage] = useState(1);
+
   const itemsPerPage = 10;
   const filterLabels = {
     today: "hoy",
@@ -24,39 +25,42 @@ const Cash = () => {
   };
 
   useEffect(() => {
-    axios
-      .get("http://localhost:4000/api/cash/balance")
-      .then((res) => setCash(res.data))
-      .catch(() => setCash("Error"));
-  }, []);
+    const fetchData = async () => {
+      try {
+        const balanceData = await getBalance();
+        setCash(balanceData);
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:4000/api/cash/flow")
-      .then((res) => setFlow(res.data))
-      .catch(() => setFlow([]));
+        const flowsData = await getFlows();
+        setFlow(flowsData);
+      } catch (error) {
+        setCash({ balance: "Error" });
+        setFlow([]);
+        console.error("Error fetching balance/flows: ", error);
+      }
+    };
+    fetchData();
   }, []);
 
   const handleAddManualFlow = async () => {
     try {
-      await axios.post("http://localhost:4000/api/cash/flow", {
+      await createFlow({
         type,
         amount: Number(amount),
-        description,
+        description
       });
+
+      const resFlow = await getFlows();
+      setFlow(resFlow);
+      const resBalance = await getBalance();
+      setCash(resBalance);
+
       setType("");
       setAmount("");
       setDescription("");
-      setShowModal(false);
-
-      const resFlow = await axios.get("http://localhost:4000/api/cash/flow");
-      setFlow(resFlow.data);
-      const resBalance = await axios.get(
-        "http://localhost:4000/api/cash/balance"
-      );
-      setCash(resBalance.data);
+      setShowModal("");
     } catch (error) {
-      alert("Error registering flow ", error);
+      alert("Error registering flow");
+      console.error("Error registering flow: ", error);
     }
   };
 

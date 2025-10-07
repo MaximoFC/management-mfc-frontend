@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 import Layout from "../components/Layout";
+import { getActiveWarranties } from "../services/budgetService";
 
 const Warranties = () => {
     const [budgets, setBudgets] = useState([]);
@@ -10,9 +10,8 @@ const Warranties = () => {
     useEffect(() => {
         const fetchWarranties = async () => {
             try {
-                //Solo presupuestos con garantías activas
-                const res = await axios.get("http://localhost:4000/api/budgets/active-warranties");
-                setBudgets(res.data);
+                const data = await getActiveWarranties();
+                setBudgets(data);
             } catch (err) {
                 console.error("Error fetching warranties", err);
             } finally {

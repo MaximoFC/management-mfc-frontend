@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import { AiOutlineDelete } from "react-icons/ai";
@@ -7,6 +6,7 @@ import { FaRegEdit } from "react-icons/fa";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import { useSearch } from "../context/SearchContext";
 import { SPARE_TYPES } from "../constants/spareTypes";
+import { fetchBikeparts, searchBikeParts, deleteBikepart } from "../services/bikepartService";
 
 const StockList = () => {
   const [spare, setSpare] = useState([]);
@@ -15,14 +15,13 @@ const StockList = () => {
     useSearch();
 
   useEffect(() => {
-    axios
-      .get("http://localhost:4000/api/bikeparts")
-      .then((res) => setSpare(res.data))
+    fetchBikeparts()
+      .then(setSpare)
       .catch(() => setSpare([]));
   }, []);
 
   useEffect(() => {
-    setSearchPlaceholder("Buscar repuesto por descripción o código");
+    setSearchPlaceholder("Buscar repuesto por descripción, código o marca");
 
     setOnSearch(() => (term) => {
       setSearchTerm(term);
@@ -36,15 +35,28 @@ const StockList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredSpares = spare.filter((r) => {
-    const matchesType =
-      filter === "" || r.type?.toLowerCase() === filter.toLowerCase();
-    const matchesSearch =
-      searchTerm === "" ||
-      r.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.code?.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    const fetchFiltered = async () => {
+      if (!searchTerm) {
+        const data = await fetchBikeparts();
+        setSpare(data);
+        return;
+      }
 
-    return matchesType && matchesSearch;
+      try {
+        const data = await searchBikeParts(searchTerm);
+        setSpare(data);
+      } catch (err) {
+        console.error("Error fetching search results: ", err);
+        setSpare([]);
+      }
+    };
+
+    fetchFiltered();
+  }, [searchTerm]);
+
+  const filteredSpares = spare.filter((r) => {
+    return filter === "" || r.type?.toLowerCase() === filter.toLowerCase();
   });
 
   const handleDelete = async (id) => {
@@ -54,7 +66,7 @@ const StockList = () => {
     if (!confirm) return;
 
     try {
-      await axios.delete(`http://localhost:4000/api/bikeparts/${id}`);
+      await deleteBikepart(id);
       setSpare(spare.filter((item) => item._id !== id));
     } catch (error) {
       console.error("Error deleting spare: ", error);

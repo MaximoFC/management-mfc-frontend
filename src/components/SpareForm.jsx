@@ -43,7 +43,7 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
       type: "",
       brand: "",
       description: "",
-      price: "",
+      price_usd: "",
       stock: "",
       amount: "",
       ...initialData,
@@ -128,12 +128,12 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
                 <input
                   className="border border-gray-300 rounded-md p-2"
                   type="number"
-                  id="price"
-                  {...register("price", { valueAsNumber: true })}
+                  id="price_usd"
+                  {...register("price_usd", { valueAsNumber: true })}
                   placeholder="Precio en dólares"
                 />
-                {errors.price && (
-                  <p className="text-red-500 text-sm">{errors.price.message}</p>
+                {errors.price_usd && (
+                  <p className="text-red-500 text-sm">{errors.price_usd.message}</p>
                 )}
               </div>
             </>

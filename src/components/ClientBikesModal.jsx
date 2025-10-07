@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fetchBikesByClient, addBike } from "../services/bikeService";
 
 const initialForm = { brand: "", model: "", color: "" };
 
@@ -10,10 +11,15 @@ export default function ClientBikesModal({ client, closeModal }) {
 
   // Traer bicis del cliente
   useEffect(() => {
-    fetch(`http://localhost:4000/api/bikes?client_id=${client._id}`)
-      .then(res => res.json())
-      .then(setBikes)
-      .catch(() => setBikes([]));
+    const loadBikes = async () => {
+      try {
+        const data = await fetchBikesByClient(client._id);
+        setBikes(data);
+      } catch {
+        setBikes([]);
+      }
+    };
+    loadBikes();
   }, [client._id]);
 
   // Manejar formulario
@@ -27,18 +33,10 @@ export default function ClientBikesModal({ client, closeModal }) {
     setMsg(null);
 
     try {
-      const res = await fetch("http://localhost:4000/api/bikes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, current_owner_id: client._id, active: true })
-      });
-      if (!res.ok) throw new Error("No se pudo agregar la bicicleta");
+      const newBike = await addBike({ ...form, current_owner_id: client._id, active: true });
       setForm(initialForm);
-      setMsg({ type: "success", text: "¡Bicicleta agregada!" });
-
-      // Se refresca la listax
-      const data = await res.json();
-      setBikes(b => [...b, data]);
+      setMsg({ type: "success", text: "Bicicleta agregada" });
+      setBikes(b => [...b, newBike]);
     } catch {
       setMsg({ type: "error", text: "Error al agregar la bicicleta." });
     }

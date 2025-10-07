@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { loginEmployee } from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from '../context/AuthContext';
 import Logo from '/Logo MFC.jpg';
 import { useForm } from "react-hook-form";
@@ -15,9 +15,9 @@ const loginSchema = z.object({
 function Login() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
-
+    
     const {
         register,
         handleSubmit,
@@ -25,6 +25,10 @@ function Login() {
     } = useForm({
         resolver: zodResolver(loginSchema)
     });
+
+    if (isAuthenticated) {
+        return <Navigate to="/dashboard" replace />;
+    }
 
     const onSubmit = async (data) => {
         setLoading(true);
