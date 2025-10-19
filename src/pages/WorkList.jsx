@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { fetchBudgets, updateBudgetState } from "../services/budgetService";
 import WarrantyModal from "../components/WarrantyModal";
-import { createFlow } from "../services/cashService";
 import axios from "axios";
 
 const STATES = ["iniciado", "en proceso", "terminado", "pagado", "retirado"];
@@ -85,20 +84,33 @@ const WorkList = () => {
       if (confirmWarranty) {
         setPendingWarrantyBudget(movedBudget);
         setShowWarrantyModal(true);
+        return;
       } else {
         await updateBudgetState(movedBudget._id, { state: to });
-      }
-    }
 
-    if (to === 'pagado') {
-      try {
-        await createFlow('http://localhost:4000/api/cash/flow', {
-          type: 'ingreso',
-          amount: Number(movedBudget.total_ars),
-          description: `Cobro de presupuesto de ${movedBudget.bike_id?.current_owner_id?.name || '-'} ${movedBudget.bike_id?.current_owner_id?.surname || '-'}`
+        setColumns(prev => {
+          const updated = { ...prev };
+          updated[from] = [...updated[from]];
+          updated[from].splice(source.index, 1);
+          updated[to] = [...updated[to], { ...movedBudget, state: to }];
+          return updated;
         });
-      } catch (error) {
-        console.error("Error creating cash flow:", error.message);
+
+        setStats(prev => {
+          let newToCharge = prev.toCharge;
+          let newPendingPickup = prev.pendingPickup;
+
+          newToCharge += Number(movedBudget.total_ars) || 0;
+          newPendingPickup++;
+
+          return {
+            ...prev,
+            toCharge: newToCharge,
+            pendingPickup: newPendingPickup
+          };
+        });
+
+        return;
       }
     }
 
@@ -347,14 +359,41 @@ const WorkList = () => {
             setPendingWarrantyBudget(null);
           }}
           onConfirm={async (selectedServices) => {
-          await updateBudgetState(pendingWarrantyBudget._id, {
-            state: "terminado",
-            giveWarranty: true,
-            warrantyServices: selectedServices
-          });
-          setShowWarrantyModal(false);
-          setPendingWarrantyBudget(null);
-        }}
+            try {
+              await updateBudgetState(pendingWarrantyBudget._id, {
+                state: "terminado",
+                giveWarranty: true,
+                warrantyServices: selectedServices
+              });
+              setShowWarrantyModal(false);
+              setPendingWarrantyBudget(null);
+
+              setColumns(prev => {
+                const updated = { ...prev };
+          
+                const fromKey = Object.keys(updated).find(key =>
+                  updated[key].some(b => b._id === pendingWarrantyBudget._id)
+                );
+                if (!fromKey) return prev;
+
+                updated[fromKey] = updated[fromKey].filter(b => b._id !== pendingWarrantyBudget._id);
+
+                updated.terminado = [
+                  ...updated.terminado,
+                  { ...pendingWarrantyBudget, state: "terminado" }
+                ];
+                return updated;
+              });
+
+              setStats(prev => ({
+                ...prev,
+                toCharge: prev.toCharge + Number(pendingWarrantyBudget.total_ars || 0),
+                pendingPickup: prev.pendingPickup + 1
+              }));
+            } catch (error) {
+              console.error("Error actualizando garantía: ", error);
+            }
+          }}
         />
       )}
 
