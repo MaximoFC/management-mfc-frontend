@@ -24,7 +24,10 @@ export const getFlows = async () => {
 
 export const createFlow = async (flowData) => {
     try {
-        const res = await axios.post(`${API_URL}/flow`, flowData);
+        const res = await axios.post(`${API_URL}/flow`, flowData, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+
         return res.data;
     } catch (error) {
         console.error("Error creating flow: ", error);
