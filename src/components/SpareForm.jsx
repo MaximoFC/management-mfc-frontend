@@ -15,7 +15,7 @@ const getSchemaByMode = (mode) => {
     code: z.string().min(1, "El código es obligatorio"),
     type: z.string().min(1, "Debe seleccionar un tipo de repuesto"),
     brand: z.string().min(1, "La marca es obligatoria"),
-    price: z.number().min(0, "El precio debe ser mayor o igual a 0"),
+    price_usd: z.number().min(0, "El precio debe ser mayor o igual a 0"),
     stock: z.number().min(0, "El stock debe ser mayor o igual a 0"),
     description: z.string().min(1, "La descripción es obligatoria"),
   });
@@ -54,7 +54,7 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
     onSubmit({
       ...data,
       stock: Number(data.stock),
-      price_usd: Number(data.price),
+      price_usd: Number(data.price_usd),
       amount: Number(data.amount),
     });
   };

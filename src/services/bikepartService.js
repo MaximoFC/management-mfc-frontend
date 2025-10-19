@@ -57,6 +57,7 @@ export const deleteBikepart = async (id) => {
     await axios.delete(`${API_URL}/${id}`);
   } catch (err) {
     console.error(`Error deleting bikepart with id ${id}`, err);
-    throw err.reponse?.data || { message: "Error eliminando repuesto" };
+    throw err.response?.data || { message: "Error eliminando repuesto" };
+
   }
 };
