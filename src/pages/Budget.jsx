@@ -9,6 +9,7 @@ import WarrantyMatchModal from "../components/WarrantyMatchModal";
 import { fetchClients } from "../services/clientService";
 import { fetchBikesByClient } from "../services/bikeService";
 import { createBudget, getActiveWarranties, generateBudgetPdf } from "../services/budgetService";
+import Select from "react-select";
 
 const Budget = () => {
   const [tab, setTab] = useState("services");
@@ -198,24 +199,73 @@ const Budget = () => {
     }
   };
 
+  const clientOptions = clients.map(c => ({
+    value: c._id,
+    label: `${c.name} ${c.surname}`
+  }))
+
+  const customStyles = {
+  control: (provided) => ({
+    ...provided,
+    borderRadius: "0.375rem",
+    borderColor: "#000000",
+    backgroundColor: "#ffffff",
+    padding: "0.25rem",
+    minHeight: "38px",
+    boxShadow: "none",
+    "&:hover": {
+      borderColor: "#000000",
+    },
+  }),
+  menu: (provided) => ({
+    ...provided,
+    borderRadius: "0.375rem",
+    marginTop: "2px",
+    backgroundColor: "#ffffff",
+    boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isFocused ? "#f3f4f6" : "#ffffff",
+    color: "#000000",
+    cursor: "pointer",
+  }),
+  placeholder: (provided) => ({
+    ...provided,
+    color: "#6b7280",
+  }),
+  singleValue: (provided) => ({
+    ...provided,
+    color: "#000000",
+  }),
+  dropdownIndicator: (provided) => ({
+    ...provided,
+    color: "#000000",
+    "&:hover": { color: "#000000" },
+  }),
+  clearIndicator: (provided) => ({
+    ...provided,
+    color: "#000000",
+    "&:hover": { color: "#000000" },
+  })
+};
+
   return (
     <Layout>
       <div className="max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-6">
         <div className="flex flex-col gap-6 bg-white border border-gray-200 rounded-md p-4 md:p-6">
 
           <div className="flex gap-4">
-            <select
-              className="border p-2 rounded flex-1"
-              value={clientId || ""}
-              onChange={e => setClientId(e.target.value)}
-            >
-              <option value="">-- Seleccioná cliente --</option>
-                {clients.map(c => (
-                  <option key={c._id} value={c._id}>
-                    {c.name} {c.surname}
-                  </option>
-                ))}
-            </select>
+            <Select
+              options={clientOptions}
+              value={clientOptions.find(opt => opt.value === clientId || null)}
+              onChange={(selected) => setClientId(selected?.value || null)}
+              placeholder= "Seleccioná cliente"
+              isClearable
+              isSearchable
+              styles={customStyles}
+              className="w-full"
+            />
 
             <select
               className="border p-2 rounded flex-1"
