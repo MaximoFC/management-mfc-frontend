@@ -1,8 +1,8 @@
 import Layout from "../components/Layout";
 import { useEffect, useState } from "react";
 import { IoAlertCircleOutline } from "react-icons/io5";
-import { FaRegCheckCircle } from "react-icons/fa";
-import { fetchNotifications, markNotificationAsSeen } from "../services/notificationService";
+import { FaRegCheckCircle, FaTrashAlt } from "react-icons/fa";
+import { fetchNotifications, markNotificationAsSeen, deleteNotification } from "../services/notificationService";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -32,6 +32,17 @@ const Notifications = () => {
       loadNotifications();
     } catch (error) {
       console.error("Error updating notification", error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("¿Seguro que deseas eliminar esta notificación?")) {
+      try {
+        await deleteNotification(id);
+        loadNotifications();
+      } catch (error) {
+        console.error("Error deleting notification: ", error);
+      }
     }
   };
 
@@ -70,15 +81,26 @@ const Notifications = () => {
                 </p>
               </div>
 
-              {!notif.seen && (
+              <div className="flex gap-3 items-center self-end md:self-auto">
+                {!notif.seen && (
+                  <button
+                    onClick={() => markAsSeen(notif._id)}
+                    className="text-sm text-blue-600 hover:underline cursor-pointer flex gap-2 items-center whitespace-nowrap self-end md:self-auto"
+                  >
+                    Marcar como leída
+                    <FaRegCheckCircle className="w-4 h-4 shrink-0" />
+                  </button>
+                )}
+
                 <button
-                  onClick={() => markAsSeen(notif._id)}
-                  className="text-sm text-blue-600 hover:underline cursor-pointer flex gap-2 items-center whitespace-nowrap self-end md:self-auto"
+                  onClick={() => handleDelete(notif._id)}
+                  className="text-sm text-red-600 hover:underline cursor-pointer flex gap-2 items-center whitespace-nowrap"
                 >
-                  Marcar como leída
-                  <FaRegCheckCircle className="w-4 h-4 shrink-0" />
+                  Eliminar
+                  <FaTrashAlt className="w-4 h-4 shrink-0" />
                 </button>
-              )}
+              </div>
+              
             </div>
           ))
         )}
