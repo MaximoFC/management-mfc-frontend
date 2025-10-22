@@ -6,6 +6,7 @@ import {
 } from "react-icons/io5";
 import { useEffect, useState } from "react";
 import { getBalance, getFlows, createFlow } from "../services/cashService";
+import Modal from "../components/Modal";
 
 const Cash = () => {
   const [cash, setCash] = useState({ balance: 0 });
@@ -185,12 +186,15 @@ const Cash = () => {
           </div>
 
           {showModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50 px-4">
-              <div className="bg-white p-4 sm:p-6 rounded-xl w-full max-w-md flex flex-col gap-4">
-                <h2 className="text-xl font-bold text-center sm:text-left">
-                  Movimiento manual
-                </h2>
-
+            <Modal
+              title="Movimiento manual"
+              onClose={() => setShowModal(false)}
+              onConfirm={handleAddManualFlow}
+              confirmText="Confirmar"
+              cancelText="Cancelar"
+              disableConfirm={!type || !amount || !description}
+            >
+              <div className="flex flex-col gap-4">
                 <select
                   className="border p-2 rounded"
                   value={type}
@@ -216,23 +220,8 @@ const Cash = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
-
-                <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
-                  <button
-                    className="bg-gray-200 p-2 rounded hover:bg-gray-300"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    className="bg-red-500 text-white p-2 rounded hover:bg-red-700"
-                    onClick={handleAddManualFlow}
-                  >
-                    Confirmar
-                  </button>
-                </div>
               </div>
-            </div>
+            </Modal>
           )}
 
           <div className="overflow-x-auto">

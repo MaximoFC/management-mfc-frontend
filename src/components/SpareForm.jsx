@@ -60,11 +60,10 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
   };
 
   return (
-    <div className="flex items-center justify-center h-dvh px-4">
-      <form
-        onSubmit={handleSubmit(onValid)}
-        className="p-4 sm:p-6 flex flex-col justify-center gap-4 rounded-md shadow-md border border-gray-200 bg-white w-full max-w-2xl"
-      >
+    <form
+      onSubmit={handleSubmit(onValid)}
+      className="flex flex-col gap-5"
+    >
         <h2 className="text-2xl font-bold text-center sm:text-left">
           {mode === "create"
             ? "Agregar nuevo repuesto"
@@ -197,7 +196,6 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create" }) => {
             : "Agregar repuesto"}
         </button>
       </form>
-    </div>
   );
 };
 

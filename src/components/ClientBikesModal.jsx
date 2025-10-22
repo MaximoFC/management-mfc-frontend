@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchBikesByClient, addBike } from "../services/bikeService";
+import Modal from "../components/Modal";
 
 const initialForm = { brand: "", model: "", color: "" };
 
@@ -44,30 +45,33 @@ export default function ClientBikesModal({ client, closeModal }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full flex p-8 relative">
-        {/* Cierro */}
-        <button onClick={closeModal} className="absolute top-3 right-3 text-2xl text-gray-500 hover:text-red-600">&times;</button>
-        {/* Columna izquierda */}
-        <div className="w-1/2 border-r pr-8">
-          <h3 className="text-xl font-bold mb-4">Bicicletas</h3>
+    <Modal
+      title={`Bicicletas de ${client.name} ${client.surname}`}
+      onClose={closeModal}
+      showCancel={false}
+    >
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Columna izquierda - Lista de bicicletas */}
+        <div className="md:w-1/2 border-b md:border-b-0 md:border-r pb-4 md:pb-0 md:pr-6">
+          <h3 className="text-lg font-semibold mb-3">Bicicletas registradas</h3>
           {bikes.length === 0 ? (
             <p className="text-gray-500">No hay bicicletas para este cliente.</p>
           ) : (
             <ul className="space-y-2">
-              {bikes.map(b => (
-                <li key={b._id} className="border-b pb-2">
+              {bikes.map((b) => (
+                <li key={b._id} className="border rounded-md p-2">
                   <div className="font-medium">{b.brand} {b.model}</div>
-                  <div className="text-gray-500">Color: {b.color}</div>
+                  <div className="text-gray-500 text-sm">Color: {b.color}</div>
                   <div className="text-xs text-gray-400">ID: {b._id}</div>
                 </li>
               ))}
             </ul>
           )}
         </div>
-        {/* Columna derecha */}
-        <div className="w-1/2 pl-8">
-          <h3 className="text-xl font-bold mb-4">Agregar bicicleta</h3>
+
+        {/* Columna derecha - Formulario */}
+        <div className="md:w-1/2 md:pl-6">
+          <h3 className="text-lg font-semibold mb-3">Agregar bicicleta</h3>
           <form onSubmit={handleSubmit} className="space-y-3">
             <input
               type="text"
@@ -76,7 +80,7 @@ export default function ClientBikesModal({ client, closeModal }) {
               value={form.brand}
               onChange={handleChange}
               required
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
             />
             <input
               type="text"
@@ -85,7 +89,7 @@ export default function ClientBikesModal({ client, closeModal }) {
               value={form.model}
               onChange={handleChange}
               required
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
             />
             <input
               type="text"
@@ -94,23 +98,39 @@ export default function ClientBikesModal({ client, closeModal }) {
               value={form.color}
               onChange={handleChange}
               required
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow font-bold w-full"
-            >
-              {loading ? "Agregando..." : "Agregar bicicleta"}
-            </button>
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-semibold w-full sm:w-auto"
+              >
+                {loading ? "Agregando..." : "Agregar bicicleta"}
+              </button>
+
+              <button
+                type="button"
+                onClick={closeModal}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md w-full sm:w-auto"
+              >
+                Cerrar
+              </button>
+            </div>
+
             {msg && (
-              <div className={`text-center mt-2 ${msg.type === "success" ? "text-green-600" : "text-red-600"}`}>
+              <div
+                className={`text-center mt-3 ${
+                  msg.type === "success" ? "text-green-600" : "text-red-600"
+                }`}
+              >
                 {msg.text}
               </div>
             )}
           </form>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

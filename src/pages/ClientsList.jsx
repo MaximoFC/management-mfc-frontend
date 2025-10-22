@@ -5,6 +5,7 @@ import { fetchClients } from "../services/clientService";
 import { useSearch } from "../context/SearchContext";
 import { useNavigate } from "react-router-dom";
 import { fetchBikesByClient } from "../services/bikeService";
+import NewClient from "./NewClient";
 
 const ClientList = () => {
   const { searchTerm } = useSearch();
@@ -13,6 +14,7 @@ const ClientList = () => {
   const [recentClients, setRecentClients] = useState(0);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
   const itemsPerPage = 10;
 
   const navigate = useNavigate();
@@ -108,12 +110,13 @@ const ClientList = () => {
 
         {/* Botón para agregar cliente */}
         <div className="flex justify-start">
-          <Link
-            to="/clientes/nuevo"
-            className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md w-full sm:w-auto text-center"
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md w-full sm:w-auto text-center cursor-pointer"
           >
             + Agregar nuevo cliente
-          </Link>
+          </button>
+          <NewClient showModal={showModal} onClose={() => setShowModal(false)} />
         </div>
 
         {/* Tabla o mensaje de carga / vacío */}

@@ -1,18 +1,21 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
+import Modal from "../components/Modal";
+import SpareForm from "../components/SpareForm";
 import { AiOutlineDelete } from "react-icons/ai";
 import { FaRegEdit } from "react-icons/fa";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import { useSearch } from "../context/SearchContext";
 import { SPARE_TYPES } from "../constants/spareTypes";
-import { fetchBikeparts, searchBikeParts, deleteBikepart } from "../services/bikepartService";
+import { fetchBikeparts, searchBikeParts, deleteBikepart, getBikepartById, createBikepart, updateBikepart } from "../services/bikepartService";
+import { createFlow } from "../services/cashService";
 
 const StockList = () => {
   const [spare, setSpare] = useState([]);
   const [filter, setFilter] = useState("");
-  const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } =
-    useSearch();
+  const [modalData, setModalData] = useState({ open: false, mode: null, spare: null });
+  const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } = useSearch();
 
   useEffect(() => {
     fetchBikeparts()
@@ -74,6 +77,55 @@ const StockList = () => {
     }
   };
 
+  const openModal = async (mode, id = null) => {
+    if (id) {
+      const data = await getBikepartById(id);
+      setModalData({ open: true, mode, spare: data });
+    } else {
+      setModalData({ open: true, mode, spare: null });
+    }
+  };
+
+  const closeModal = () => setModalData({ open: false, mode: null, spare: null });
+
+  const handleFormSubmit = async (data) => {
+    try {
+      if (modalData.mode === "create") {
+        const totalCost = Number(data.stock) * Number(data.amount);
+        const newPart = await createBikepart(data);
+
+        await createFlow({
+          type: "egreso",
+          amount: totalCost,
+          description: `Compra de nuevo repuesto ${newPart.description}`,
+        });
+      }
+
+      if (modalData.mode === "update") {
+        await updateBikepart(modalData.spare._id, data);
+      }
+
+      if (modalData.mode === "replenish") {
+        const updatedStock = Number(modalData.spare.stock) + Number(data.stock);
+        const totalCost = Number(data.stock) * Number(data.amount);
+
+        await updateBikepart(modalData.spare._id, { ...modalData.spare, stock: updatedStock });
+        await createFlow({
+          type: "egreso",
+          amount: totalCost,
+          description: `Reposición de stock: ${modalData.spare.description}`,
+        });
+      }
+
+      closeModal();
+      const updated = await fetchBikeparts();
+      setSpare(updated);
+    } catch (err) {
+      alert("Ocurrió un error al guardar el repuesto");
+      console.error(err);
+    }
+  };
+
   const lowStock = spare.filter((r) => r.stock > 0 && r.stock <= 5).length;
   const withoutStock = spare.filter((r) => r.stock === 0).length;
   const totalInventoryAmount = spare.reduce(
@@ -105,12 +157,12 @@ const StockList = () => {
         </div>
 
         <div className="flex flex-wrap items-start gap-2">
-          <Link
-            to="/repuestos/nuevo"
-            className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md w-full sm:w-auto text-center"
+          <button
+            onClick={() => openModal("create")}
+            className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md w-full sm:w-auto text-center cursor-pointer"
           >
             + Ingreso
-          </Link>
+          </button>
         </div>
 
         <div>
@@ -174,18 +226,12 @@ const StockList = () => {
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex gap-2 items-center justify-start sm:justify-center">
-                        <Link
-                          to={`/repuestos/editar/${r._id}`}
-                          className="hover:text-gray-600 cursor-pointer"
-                        >
+                        <button onClick={() => openModal("update", r._id)} className="cursor-pointer">
                           <FaRegEdit className="w-5 h-5" />
-                        </Link>
-                        <Link
-                          to={`/repuestos/reponer/${r._id}`}
-                          className="hover:text-gray-600 cursor-pointer"
-                        >
+                        </button>
+                        <button onClick={() => openModal("replenish", r._id)} className="cursor-pointer">
                           <IoMdAddCircleOutline className="w-5 h-5" />
-                        </Link>
+                        </button>
                         <button
                           className="text-red-500 hover:text-red-700 cursor-pointer"
                           onClick={() => handleDelete(r._id)}
@@ -201,6 +247,34 @@ const StockList = () => {
           </table>
         </div>
       </div>
+
+      {modalData.open && (
+        <Modal
+          title={
+            modalData.mode === "create"
+              ? "Agregar repuesto"
+              : modalData.mode === "update"
+              ? "Editar repuesto"
+              : "Reponer stock"
+          }
+          onClose={closeModal}
+          onConfirm={() => document.getElementById("spare-form-btn").click()}
+          confirmText={
+            modalData.mode === "create"
+              ? "Agregar"
+              : modalData.mode === "update"
+              ? "Guardar"
+              : "Reponer"
+          }
+        >
+          <SpareForm
+            initialData={modalData.spare}
+            onSubmit={handleFormSubmit}
+            mode={modalData.mode}
+            formId="spare-form-btn"
+          />
+        </Modal>
+      )}
     </Layout>
   );
 };

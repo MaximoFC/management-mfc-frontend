@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addClient } from "../services/clientService";
+import Modal from "../components/Modal"; // Asegurate de importar correctamente
 
-function NewClient() {
+function NewClient({ showModal, onClose }) {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [mobileNum, setMobileNum] = useState("");
@@ -10,12 +11,12 @@ function NewClient() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError("");
     setLoading(true);
     try {
       await addClient({ name, surname, mobileNum });
+      onClose(); // Cerrar modal
       navigate("/clientes");
     } catch (err) {
       setError(err.message);
@@ -23,17 +24,19 @@ function NewClient() {
     }
   };
 
-  return (
-    <div className="flex items-center justify-center min-h-screen px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md p-6 flex flex-col justify-center gap-4 rounded-md shadow-md border border-gray-200 bg-white"
-      >
-        <h2 className="text-2xl font-bold text-center">
-          Agregar nuevo cliente
-        </h2>
+  if (!showModal) return null;
 
-        <div className="mb-4">
+  return (
+    <Modal
+      title="Agregar nuevo cliente"
+      onClose={onClose}
+      onConfirm={handleSubmit}
+      confirmText={loading ? "Guardando..." : "Agregar cliente"}
+      cancelText="Cancelar"
+      disableConfirm={loading || !name || !surname || !mobileNum}
+    >
+      <div className="flex flex-col gap-4">
+        <div>
           <label className="block mb-1 font-medium">Nombre *</label>
           <input
             type="text"
@@ -44,7 +47,7 @@ function NewClient() {
           />
         </div>
 
-        <div className="mb-4">
+        <div>
           <label className="block mb-1 font-medium">Apellido *</label>
           <input
             type="text"
@@ -55,7 +58,7 @@ function NewClient() {
           />
         </div>
 
-        <div className="mb-6">
+        <div>
           <label className="block mb-1 font-medium">Número de teléfono *</label>
           <input
             type="text"
@@ -66,17 +69,9 @@ function NewClient() {
           />
         </div>
 
-        {error && <div className="text-red-500 mb-4 text-sm">{error}</div>}
-
-        <button
-          type="submit"
-          className="rounded-md bg-red-500 text-white cursor-pointer p-2 hover:bg-red-700"
-          disabled={loading}
-        >
-          {loading ? "Guardando..." : "Agregar cliente"}
-        </button>
-      </form>
-    </div>
+        {error && <div className="text-red-500 text-sm">{error}</div>}
+      </div>
+    </Modal>
   );
 }
 
