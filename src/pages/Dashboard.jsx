@@ -6,6 +6,7 @@ import { TfiClipboard } from "react-icons/tfi";
 import { PiPersonSimpleBike } from "react-icons/pi";
 import { Link } from "react-router-dom";
 import { fetchDashboardData } from "../services/dashboardService";
+import ClipLoader from "react-spinners/ClipLoader";
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -26,7 +27,12 @@ const Dashboard = () => {
     loadDashboard();
   }, []);
 
-  if (loading) return <p className="p-4">Cargando resumen...</p>;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-[80vh]">
+        <ClipLoader color="#ef4444" size={50} />
+      </div>
+    );
   if (!data) return <p className="p-4 text-red-600">Error al cargar datos.</p>;
 
   return (

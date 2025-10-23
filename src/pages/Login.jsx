@@ -6,6 +6,7 @@ import Logo from '/Logo MFC.jpg';
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import ClipLoader from "react-spinners/ClipLoader";
 
 const loginSchema = z.object({
     name: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
@@ -86,7 +87,11 @@ function Login() {
                         loading ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-700"
                     }`}
                 >
-                    {loading ? "Cargando..." : "Iniciar sesión"}
+                    {loading ? (
+                        <ClipLoader color="#d70000ff" size={22} />
+                    ) : (
+                        "Iniciar sesión"
+                    )}
                 </button>
             </form>
 
