@@ -2,6 +2,7 @@ import SpareForm from "../components/SpareForm";
 import { useNavigate } from "react-router-dom";
 import { createBikepart } from "../services/bikepartService";
 import { createFlow } from "../services/cashService";
+import { toast } from "react-toastify";
 
 const StockEntryForm = () => {
     const navigate = useNavigate();
@@ -10,7 +11,7 @@ const StockEntryForm = () => {
         const totalCost = Number(data.stock) * Number(data.amount);
 
         if (isNaN(totalCost) || totalCost <= 0) {
-            alert("El monto total debe ser mayor a 0");
+            toast.warning("El monto total debe ser mayor a 0");
             return;
         }
 
@@ -28,8 +29,8 @@ const StockEntryForm = () => {
             
             navigate('/repuestos');
         } catch (err) {
-            alert("Error creating spare: ", err);
-            alert("Ocurrió un error al crear el repuesto o registrar el flujo de caja");
+            console.error("Error creating spare: ", err);
+            toast.error("Ocurrió un error al crear el repuesto o registrar el flujo de caja");
         }
     };
 

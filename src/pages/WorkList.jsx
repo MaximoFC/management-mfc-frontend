@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { fetchBudgets, updateBudgetState } from "../services/budgetService";
 import WarrantyModal from "../components/WarrantyModal";
 import axios from "axios";
+import { confirmToast } from "../components/ConfirmToast";
 
 const STATES = ["iniciado", "en proceso", "terminado", "pagado", "retirado"];
 const STATE_LABELS = {
@@ -80,12 +81,10 @@ const WorkList = () => {
 
     let warranty = null;
     if (to === "terminado") {
-      const confirmWarranty = window.confirm("¿Este presupuesto tendrá garantía?");
-      if (confirmWarranty) {
+      confirmToast("¿Este presupuesto tendrá garantía?", async () => {
         setPendingWarrantyBudget(movedBudget);
         setShowWarrantyModal(true);
-        return;
-      } else {
+      }, async () => {
         await updateBudgetState(movedBudget._id, { state: to });
 
         setColumns(prev => {
@@ -109,9 +108,8 @@ const WorkList = () => {
             pendingPickup: newPendingPickup
           };
         });
-
-        return;
-      }
+      });
+      return;
     }
 
     // Update backend

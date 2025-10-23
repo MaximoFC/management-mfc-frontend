@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SpareForm from "../components/SpareForm";
+import { toast } from "react-toastify";
 
 const EditSpare = () => {
     const { id } = useParams();
@@ -18,7 +19,7 @@ const EditSpare = () => {
             await axios.put(`http://localhost:4000/api/bikeparts/${id}`, data);
             navigate('/repuestos');
         } catch (err) {
-            alert("Error updating spare: ", err);
+            toast.error("Error updating spare: ", err);
         }
     };
 

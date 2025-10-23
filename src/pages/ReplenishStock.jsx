@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SpareForm from "../components/SpareForm";
 import { updateBikepart, getBikepartById } from "../services/bikepartService";
 import { createFlow } from "../services/cashService";
+import { toast } from "react-toastify";
 
 const ReplenishStock = () => {
     const { id } = useParams();
@@ -28,7 +29,8 @@ const ReplenishStock = () => {
             
             navigate('/repuestos');
         } catch (err) {
-            alert("Error updating spare: ", err);
+            console.error(err);
+            toast.error("Ocurrió un error al reponer stock");
         }
     };
 

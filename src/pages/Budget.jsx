@@ -10,6 +10,7 @@ import { fetchClients } from "../services/clientService";
 import { fetchBikesByClient } from "../services/bikeService";
 import { createBudget, getActiveWarranties, generateBudgetPdf } from "../services/budgetService";
 import Select from "react-select";
+import { toast } from "react-toastify";
 
 const Budget = () => {
   const [tab, setTab] = useState("services");
@@ -41,14 +42,14 @@ const Budget = () => {
       applyWarranty: coveredServices,
     });
 
-    alert("Presupuesto generado con éxito");
+    toast.success("Presupuesto generado con éxito");
     setShowModal(false);
     setSelectedServices([]);
     setSelectedBikeparts([]);
     setCoveredServices([]);
   } catch (err) {
     console.error(err);
-    alert("Error al generar el presupuesto");
+    toast.error("Error al generar el presupuesto");
   }
 };
 
@@ -72,7 +73,7 @@ const Budget = () => {
 
   const handleGenerateBudget = () => {
     if (!clientId || !bikeId) {
-      alert("Seleccione cliente y bicicleta");
+      toast.warning("Seleccione cliente y bicicleta");
       return;
     }
 
@@ -195,7 +196,7 @@ const Budget = () => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert("Error generando PDF");
+      toast.error("Error generando PDF");
     }
   };
 

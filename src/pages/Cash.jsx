@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import { getBalance, getFlows, createFlow } from "../services/cashService";
 import Modal from "../components/Modal";
+import { toast } from "react-toastify";
 
 const Cash = () => {
   const [cash, setCash] = useState({ balance: 0 });
@@ -60,7 +61,7 @@ const Cash = () => {
       setDescription("");
       setShowModal("");
     } catch (error) {
-      alert("Error registering flow");
+      toast.alert("Error al registrar movimiento");
       console.error("Error registering flow: ", error);
     }
   };

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { IoAlertCircleOutline } from "react-icons/io5";
 import { FaRegCheckCircle, FaTrashAlt } from "react-icons/fa";
 import { fetchNotifications, markNotificationAsSeen, deleteNotification } from "../services/notificationService";
+import { confirmToast } from "../components/ConfirmToast";
+import { toast } from "react-toastify";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -36,14 +38,19 @@ const Notifications = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("¿Seguro que deseas eliminar esta notificación?")) {
-      try {
-        await deleteNotification(id);
-        loadNotifications();
-      } catch (error) {
-        console.error("Error deleting notification: ", error);
+    confirmToast(
+      "¿Seguro que deseas eliminar esta notificación?",
+      async () => {
+        try {
+          await deleteNotification(id);
+          loadNotifications();
+          toast.success("Notificación eliminada");
+        } catch (error) {
+          console.error("Error deleting notification: ", error);
+          toast.error("No se pudo eliminar");
+        }
       }
-    }
+    );
   };
 
   return (

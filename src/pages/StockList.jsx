@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import Modal from "../components/Modal";
 import SpareForm from "../components/SpareForm";
@@ -10,6 +9,8 @@ import { useSearch } from "../context/SearchContext";
 import { SPARE_TYPES } from "../constants/spareTypes";
 import { fetchBikeparts, searchBikeParts, deleteBikepart, getBikepartById, createBikepart, updateBikepart } from "../services/bikepartService";
 import { createFlow } from "../services/cashService";
+import { toast } from "react-toastify";
+import { confirmToast } from "../components/ConfirmToast";
 
 const StockList = () => {
   const [spare, setSpare] = useState([]);
@@ -62,19 +63,20 @@ const StockList = () => {
     return filter === "" || r.type?.toLowerCase() === filter.toLowerCase();
   });
 
-  const handleDelete = async (id) => {
-    const confirm = window.confirm(
-      "¿Estás seguro de que querés eliminar este repuesto?"
+  const handleDelete = (id) => {
+    confirmToast(
+      "¿Estás seguro de eliminar este repuesto?",
+      async () => {
+        try {
+          await deleteBikepart(id);
+          setSpare((prev) => prev.filter((item) => item._id !== id));
+          toast.success("Repuesto eliminado correctamente");
+        } catch (error) {
+          console.error("Error deleting spare:", error);
+          toast.error("No se pudo eliminar el repuesto");
+        }
+      }
     );
-    if (!confirm) return;
-
-    try {
-      await deleteBikepart(id);
-      setSpare(spare.filter((item) => item._id !== id));
-    } catch (error) {
-      console.error("Error deleting spare: ", error);
-      alert("No se pudo eliminar el repuesto");
-    }
   };
 
   const openModal = async (mode, id = null) => {
@@ -99,30 +101,38 @@ const StockList = () => {
           amount: totalCost,
           description: `Compra de nuevo repuesto ${newPart.description}`,
         });
+
+        toast.success("Repuesto agregado con éxito");
       }
 
       if (modalData.mode === "update") {
         await updateBikepart(modalData.spare._id, data);
+        toast.info("Repuesto actualizado correctamente");
       }
 
       if (modalData.mode === "replenish") {
         const updatedStock = Number(modalData.spare.stock) + Number(data.stock);
         const totalCost = Number(data.stock) * Number(data.amount);
 
-        await updateBikepart(modalData.spare._id, { ...modalData.spare, stock: updatedStock });
+        await updateBikepart(modalData.spare._id, {
+          ...modalData.spare,
+          stock: updatedStock,
+        });
         await createFlow({
           type: "egreso",
           amount: totalCost,
           description: `Reposición de stock: ${modalData.spare.description}`,
         });
+
+        toast.success("Stock repuesto correctamente");
       }
 
       closeModal();
       const updated = await fetchBikeparts();
       setSpare(updated);
     } catch (err) {
-      alert("Ocurrió un error al guardar el repuesto");
       console.error(err);
+      toast.error("Ocurrió un error al guardar el repuesto");
     }
   };
 
