@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { getProfile } from "../services/authService";
 
 const AuthContext = createContext();
@@ -9,41 +9,45 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const isAuthenticated = !!employee;
 
-    const isCancelled = useRef(false);
-
     useEffect(() => {
-        isCancelled.current = false;
+        let isMounted = true;
+        let verifying = false; // evita solicitudes duplicadas
 
         const verifyToken = async () => {
+            if (verifying) return; // si ya se está verificando, no hace nada
+            verifying = true;
+
             const token = localStorage.getItem("token");
 
             if (!token) {
-                if (!isCancelled.current) setLoading(false);
+                if (isMounted) setLoading(false);
+                verifying = false;
                 return;
             }
 
             try {
                 const employeeData = await getProfile();
 
-                if (!isCancelled.current) {
+                if (isMounted) {
                     setToken(token);
                     setEmployee(employeeData);
-                    setLoading(false);
                 }
             } catch (error) {
-                console.error('Error verifying profile: ', error.message);
-                if (!isCancelled.current) {
-                    logout();
-                }
+                console.error("Error verifying profile:", error.message);
+                if (isMounted) logout();
+            } finally {
+                if (isMounted) setLoading(false);
+                verifying = false;
             }
         };
 
         verifyToken();
 
         return () => {
-            isCancelled.current = true;
+            isMounted = false;
         };
     }, []);
+
 
     const login = (employeeData, token) => {
         localStorage.setItem("token", token);
