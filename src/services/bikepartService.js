@@ -1,9 +1,8 @@
-import axios from "axios";
 import api from "./api";
 
 export const fetchBikeparts = async () => {
   try {
-    const { data } = await axios.get(api);
+    const { data } = await api.get("/bikeparts");
     return data;
   } catch (err) {
     console.error("Error fetching bikeparts: ", err);
@@ -13,7 +12,7 @@ export const fetchBikeparts = async () => {
 
 export const searchBikeParts = async (q) => {
   try {
-    const { data } = await axios.get(`${api}/search?q=${encodeURIComponent(q)}`);
+    const { data } = await api.get(`/bikeparts/search?q=${encodeURIComponent(q)}`);
     return data;
   } catch (err) {
     console.error("Error searching bikeparts: ", err);
@@ -23,7 +22,7 @@ export const searchBikeParts = async (q) => {
 
 export const getBikepartById = async (id) => {
   try {
-    const { data } = await axios.get(`${api}/${id}`);
+    const { data } = await api.get(`/bikeparts/${id}`);
     return data;
   } catch (err) {
     console.error(`Error fetching bikepart with id ${id}: `, err);
@@ -33,7 +32,7 @@ export const getBikepartById = async (id) => {
 
 export const createBikepart = async (bikepart) => {
   try {
-    const { data } = await axios.post(`${api}`, bikepart);
+    const { data } = await api.post(`/bikeparts`, bikepart);
     return data;
   } catch (err) {
     console.error("Error creating bikepart: ", err);
@@ -43,7 +42,7 @@ export const createBikepart = async (bikepart) => {
 
 export const updateBikepart = async (id, bikepart) => {
   try {
-    const { data } = await axios.put(`${api}/${id}`, bikepart);
+    const { data } = await api.put(`/bikeparts/${id}`, bikepart);
     return data;
   } catch (err) {
     console.error(`Error updating bikepart with id ${id}: `, err);
@@ -53,7 +52,7 @@ export const updateBikepart = async (id, bikepart) => {
 
 export const deleteBikepart = async (id) => {
   try {
-    await axios.delete(`${api}/${id}`);
+    await api.delete(`/bikeparts/${id}`);
   } catch (err) {
     console.error(`Error deleting bikepart with id ${id}`, err);
     throw err.response?.data || { message: "Error eliminando repuesto" };

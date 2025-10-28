@@ -1,10 +1,9 @@
-import axios from "axios";
 import api from "./api";
 
 export async function fetchClients(query = '') {
   try {
-    const url = query ? `${api}?q=${encodeURIComponent(query)}` : api;
-    const { data } = await axios.get(url);
+    const url = query ? `/clients?q=${encodeURIComponent(query)}` : "/clients";
+    const { data } = await api.get(url);
     return data;
   } catch (error) {
     console.error("Error fetching clients: ", error);
@@ -14,7 +13,7 @@ export async function fetchClients(query = '') {
 
 export async function updateClient(id, payload) {
   try {
-    const { data } = await axios.put(`${api}/${id}`, payload);
+    const { data } = await api.put(`/clients/${id}`, payload);
     return data;
   } catch (error) {
     console.error("Error updating client: ", error);
@@ -24,7 +23,7 @@ export async function updateClient(id, payload) {
 
 export async function addClient(data) {
   try {
-    const { data: newClient } = await axios.post(api, data, {
+    const { data: newClient } = await api.post("/clients", data, {
       headers: { "Content-Type": "application/json" }
     });
     return newClient;
@@ -36,7 +35,7 @@ export async function addClient(data) {
 
 export async function fetchClientById(id) {
   try {
-    const { data } = await axios.get(`${api}/${id}`);
+    const { data } = await api.get(`/clients/${id}`);
     return data;
   } catch (error) {
     console.error("Error fetching client by id: ", error);

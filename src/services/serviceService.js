@@ -1,9 +1,8 @@
-import axios from "axios";
 import api from "./api";
 
 export const fetchServices = async () => {
   try {
-    const { data } = await axios.get(api);
+    const { data } = await api.get("/services");
     return data;
   } catch (error) {
     console.error("Error fetching services: ", error);
@@ -13,7 +12,7 @@ export const fetchServices = async () => {
 
 export const fetchServiceById = async (id) => {
   try {
-    const { data } = await axios.get(`${api}/${id}`);
+    const { data } = await api.get(`/services/${id}`);
     return data;
   } catch (error) {
     console.error("Error fetching service by id: ", error);
@@ -29,7 +28,7 @@ export const createService = async (serviceData) => {
       throw new Error("Datos inválidos: revisá los campos");
     }
 
-    const { data } = await axios.post(api, serviceData);
+    const { data } = await api.post("/services", serviceData);
     return data;
   } catch (error) {
     console.error("Error creating service: ", error);

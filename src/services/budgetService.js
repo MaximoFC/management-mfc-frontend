@@ -1,9 +1,8 @@
-import axios from "axios";
 import api from "./api";
 
 export const createBudget = async (data) => {
   try {
-    const res = await axios.post(api, data);
+    const res = await api.post("/budgets", data);
     return res.data;
   } catch (error) {
     console.error("Error creating budget: ", error);
@@ -13,7 +12,7 @@ export const createBudget = async (data) => {
 
 export const fetchBudgets = async () => {
   try {
-    const { data } = await axios.get(api);
+    const { data } = await api.get("/budgets");
     return data;
   } catch (error) {
     console.error("Error fetching budgets: ", error);
@@ -23,7 +22,7 @@ export const fetchBudgets = async () => {
 
 export const fetchBudgetById = async (budgetId) => {
   try {
-    const { data } = await axios.get(`${api}/${budgetId}`);
+    const { data } = await api.get(`/budgets/${budgetId}`);
     return data;
   } catch (error) {
     console.error("Error fetching budget by id: ", error);
@@ -33,7 +32,7 @@ export const fetchBudgetById = async (budgetId) => {
 
 export const updateBudgetState = async (budgetId, body) => {
   try {
-    const { data } = await axios.put(`${api}/${budgetId}`, body);
+    const { data } = await api.put(`/budgets/${budgetId}`, body);
     return data;
   } catch (error) {
     console.error("Error updating budget: ", error);
@@ -43,7 +42,7 @@ export const updateBudgetState = async (budgetId, body) => {
 
 export const fetchBudgetsByClient = async (clientId) => {
   try {
-    const { data } = await axios.get(`${api}/client/${clientId}`);
+    const { data } = await api.get(`/budgets/client/${clientId}`);
     return data.budgets;
   } catch (error) {
     console.error("Error fetching budgets by client: ", error);
@@ -53,8 +52,8 @@ export const fetchBudgetsByClient = async (clientId) => {
 
 export const getActiveWarranties = async (clientId, bikeId) => {
   try {
-    const { data } = await axios.get(
-      `${api}/active-warranties?client_id=${clientId}&bike_id=${bikeId}`
+    const { data } = await api.get(
+      `/budgets/active-warranties?client_id=${clientId}&bike_id=${bikeId}`
     );
     return data;
   } catch (error) {

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { fetchBudgets, updateBudgetState } from "../services/budgetService";
 import WarrantyModal from "../components/WarrantyModal";
-import axios from "axios";
 import { confirmToast } from "../components/ConfirmToast";
 import api from "../services/api";
 
@@ -163,8 +162,8 @@ const WorkList = () => {
         total_ars: budget.total_ars || 0
       };
 
-      const response = await axios.post(
-        `${api}/tickets/generate`,
+      const response = await api.post(
+        "/tickets/generate",
         payload,
         { responseType: "blob" }
       );
@@ -202,8 +201,8 @@ const WorkList = () => {
       date: new Date().toLocaleDateString("es-AR")
     };
 
-    const response = await axios.post(
-      `${api}/tickets/form`,
+    const response = await api.post(
+      "/tickets/form",
       payload,
       { responseType: "blob" }
     );

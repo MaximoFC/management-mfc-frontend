@@ -1,9 +1,8 @@
-import axios from "axios";
 import api from "./api";
 
 export const fetchNotifications = async () => {
     try {
-        const { data } = await axios.get(api);
+        const { data } = await api.get("/notifications");
         return data;
     } catch (error) {
         console.error("Error fetching notifications: ", error);
@@ -13,7 +12,7 @@ export const fetchNotifications = async () => {
 
 export const fetchNotificationById = async (id) => {
     try {
-        const { data } = await axios.get(`${api}/${id}`);
+        const { data } = await api.get(`/notifications/${id}`);
         return data;
     } catch (error) {
         console.error("Error fetching notification by id: ", error);
@@ -23,7 +22,7 @@ export const fetchNotificationById = async (id) => {
 
 export const createNotification = async (notification) => {
     try {
-        const { data } = await axios.post(api, notification);
+        const { data } = await api.post("notifications", notification);
         return data;
     } catch (error) {
         console.error("Error creating notification: ", error);
@@ -33,7 +32,7 @@ export const createNotification = async (notification) => {
 
 export const markNotificationAsSeen = async (id) => {
     try {
-        const { data } = await axios.put(`${api}/${id}/seen`);
+        const { data } = await api.put(`/notifications"/${id}/seen`);
         return data;
     } catch (error) {
         console.error("Error marking notification as seen: ", error);
@@ -43,7 +42,7 @@ export const markNotificationAsSeen = async (id) => {
 
 export const deleteNotification = async (id) => {
     try {
-        const { data } = await axios.delete(`${api}/${id}`);
+        const { data } = await api.delete(`/notifications/${id}`);
         return data;
     } catch (error) {
         console.error("Error deleting notification: ", error);
