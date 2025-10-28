@@ -1,10 +1,9 @@
 import axios from "axios";
-
-const API_URL = 'http://localhost:4000/api';
+import api from "./api";
 
 export const loginEmployee = async (name, password) => {
     try {
-        const res = await axios.post(`${API_URL}/login`, {
+        const res = await axios.post(`${api}/login`, {
             name,
             password
         });
@@ -27,7 +26,7 @@ export const getProfile = async () => {
     const token = localStorage.getItem('token');
 
     try {
-        const res = await axios.get(`${API_URL}/profile`, {
+        const res = await axios.get(`${api}/profile`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }

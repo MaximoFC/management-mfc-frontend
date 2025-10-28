@@ -1,10 +1,9 @@
 import axios from "axios";
-
-const API_URL = "http://localhost:4000/api/budgets";
+import api from "./api";
 
 export const createBudget = async (data) => {
   try {
-    const res = await axios.post(API_URL, data);
+    const res = await axios.post(api, data);
     return res.data;
   } catch (error) {
     console.error("Error creating budget: ", error);
@@ -14,7 +13,7 @@ export const createBudget = async (data) => {
 
 export const fetchBudgets = async () => {
   try {
-    const { data } = await axios.get(API_URL);
+    const { data } = await axios.get(api);
     return data;
   } catch (error) {
     console.error("Error fetching budgets: ", error);
@@ -24,7 +23,7 @@ export const fetchBudgets = async () => {
 
 export const fetchBudgetById = async (budgetId) => {
   try {
-    const { data } = await axios.get(`${API_URL}/${budgetId}`);
+    const { data } = await axios.get(`${api}/${budgetId}`);
     return data;
   } catch (error) {
     console.error("Error fetching budget by id: ", error);
@@ -34,7 +33,7 @@ export const fetchBudgetById = async (budgetId) => {
 
 export const updateBudgetState = async (budgetId, body) => {
   try {
-    const { data } = await axios.put(`${API_URL}/${budgetId}`, body);
+    const { data } = await axios.put(`${api}/${budgetId}`, body);
     return data;
   } catch (error) {
     console.error("Error updating budget: ", error);
@@ -44,7 +43,7 @@ export const updateBudgetState = async (budgetId, body) => {
 
 export const fetchBudgetsByClient = async (clientId) => {
   try {
-    const { data } = await axios.get(`${API_URL}/client/${clientId}`);
+    const { data } = await axios.get(`${api}/client/${clientId}`);
     return data.budgets;
   } catch (error) {
     console.error("Error fetching budgets by client: ", error);
@@ -55,7 +54,7 @@ export const fetchBudgetsByClient = async (clientId) => {
 export const getActiveWarranties = async (clientId, bikeId) => {
   try {
     const { data } = await axios.get(
-      `${API_URL}/active-warranties?client_id=${clientId}&bike_id=${bikeId}`
+      `${api}/active-warranties?client_id=${clientId}&bike_id=${bikeId}`
     );
     return data;
   } catch (error) {
@@ -65,7 +64,7 @@ export const getActiveWarranties = async (clientId, bikeId) => {
 };
 
 export const generateBudgetPdf = async (budgetData) => {
-  const response = await fetch("http://localhost:4000/api/budgets/generate-pdf", {
+  const response = await fetch(`${api}/budgets/generate-pdf`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(budgetData),

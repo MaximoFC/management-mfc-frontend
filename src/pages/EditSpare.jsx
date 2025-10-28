@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SpareForm from "../components/SpareForm";
 import { toast } from "react-toastify";
+import api from "../services/api";
 
 const EditSpare = () => {
     const { id } = useParams();
@@ -10,13 +11,13 @@ const EditSpare = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        axios.get(`http://localhost:4000/api/bikeparts/${id}`)
+        axios.get(`${api}/bikeparts/${id}`)
             .then(res => setSpare(res.data));
     }, [id]);
 
     const handleEdit = async (data) => {
         try {
-            await axios.put(`http://localhost:4000/api/bikeparts/${id}`, data);
+            await axios.put(`${api}/bikeparts/${id}`, data);
             navigate('/repuestos');
         } catch (err) {
             toast.error("Error updating spare: ", err);

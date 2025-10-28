@@ -5,6 +5,7 @@ import { fetchBudgets, updateBudgetState } from "../services/budgetService";
 import WarrantyModal from "../components/WarrantyModal";
 import axios from "axios";
 import { confirmToast } from "../components/ConfirmToast";
+import api from "../services/api";
 
 const STATES = ["iniciado", "en proceso", "terminado", "pagado", "retirado"];
 const STATE_LABELS = {
@@ -163,7 +164,7 @@ const WorkList = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:4000/api/tickets/generate",
+        `${api}/tickets/generate`,
         payload,
         { responseType: "blob" }
       );
@@ -202,7 +203,7 @@ const WorkList = () => {
     };
 
     const response = await axios.post(
-      "http://localhost:4000/api/tickets/form",
+      `${api}/tickets/form`,
       payload,
       { responseType: "blob" }
     );

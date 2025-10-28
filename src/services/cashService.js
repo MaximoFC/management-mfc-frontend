@@ -1,10 +1,9 @@
 import axios from "axios";
-
-const API_URL = "http://localhost:4000/api/cash";
+import api from "./api";
 
 export const getBalance = async () => {
     try {
-        const res = await axios.get(`${API_URL}/balance`);
+        const res = await axios.get(`${api}/balance`);
         return res.data;
     } catch (error) {
         console.error("Error fetching balance: ", error);
@@ -14,7 +13,7 @@ export const getBalance = async () => {
 
 export const getFlows = async () => {
     try {
-        const res = await axios.get(`${API_URL}/flow`);
+        const res = await axios.get(`${api}/flow`);
         return res.data;
     } catch (error) {
         console.error("Error fetching flows: ", error);
@@ -24,7 +23,7 @@ export const getFlows = async () => {
 
 export const createFlow = async (flowData) => {
     try {
-        const res = await axios.post(`${API_URL}/flow`, flowData, {
+        const res = await axios.post(`${api}/flow`, flowData, {
             headers: { 'Content-Type': 'application/json' }
         });
 

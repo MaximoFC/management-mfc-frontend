@@ -1,10 +1,10 @@
 import axios from "axios";
+import api from "./api";
 
-const API_URL = "http://localhost:4000/api/bikes";
 
 export const fetchBikesByClient = async (clientId) => {
   try {
-    const { data } = await axios.get(`${API_URL}?client_id=${clientId}`);
+    const { data } = await axios.get(`${api}?client_id=${clientId}`);
     return data;
   } catch (error) {
     console.error("Error fetching bikes: ", error);
@@ -14,7 +14,7 @@ export const fetchBikesByClient = async (clientId) => {
 
 export async function addBike(bikeData) {
   try {
-    const { data } = await axios.post(API_URL, bikeData, {
+    const { data } = await axios.post(api, bikeData, {
       headers: { "Content-Type": "application/json" }
     });
     return data;
