@@ -48,6 +48,7 @@ const AddServiceModal = ({ onClose, onSuccess }) => {
         />
         <input
           type="number"
+          step="0.01"
           value={price_usd}
           onChange={(e) => setPriceUsd(e.target.value)}
           placeholder="Costo (USD)"

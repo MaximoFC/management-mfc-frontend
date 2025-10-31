@@ -16,7 +16,10 @@ const getSchemaByMode = (mode) => {
     code: z.string().min(1, "El código es obligatorio"),
     type: z.string().min(1, "Debe seleccionar un tipo de repuesto"),
     brand: z.string().min(1, "La marca es obligatoria"),
-    price_usd: z.number().min(0, "El precio debe ser mayor o igual a 0"),
+    price_usd: z.number().min(0, "El precio debe ser mayor o igual a 0").refine(
+      (val) => /^\d+(\.\d{1,2})?$/.test(val.toString()),
+      { message: "Máximo 2 decimales" }
+    ),
     stock: z.number().min(0, "El stock debe ser mayor o igual a 0"),
     description: z.string().min(1, "La descripción es obligatoria"),
   });
@@ -136,6 +139,7 @@ const SpareForm = ({ initialData = {}, onSubmit, mode = "create", onSubmitFromMo
               <input
                 className="border border-gray-300 rounded-md p-2"
                 type="number"
+                step="0.01"
                 id="price_usd"
                 {...register("price_usd", { valueAsNumber: true })}
                 placeholder="Precio en dólares"
