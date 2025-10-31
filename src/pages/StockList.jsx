@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "../components/Layout";
 import Modal from "../components/Modal";
 import SpareForm from "../components/SpareForm";
@@ -17,6 +17,7 @@ const StockList = () => {
   const [filter, setFilter] = useState("");
   const [modalData, setModalData] = useState({ open: false, mode: null, spare: null });
   const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } = useSearch();
+  const formRef = useRef(null);
 
   useEffect(() => {
     fetchBikeparts()
@@ -268,7 +269,7 @@ const StockList = () => {
               : "Reponer stock"
           }
           onClose={closeModal}
-          onConfirm={() => document.getElementById("spare-form-btn").click()}
+          onConfirm={() => formRef.current?.requestSubmit()}
           confirmText={
             modalData.mode === "create"
               ? "Agregar"
@@ -281,7 +282,8 @@ const StockList = () => {
             initialData={modalData.spare}
             onSubmit={handleFormSubmit}
             mode={modalData.mode}
-            formId="spare-form-btn"
+            onSubmitFromModal={true}
+            formRef={formRef}
           />
         </Modal>
       )}
