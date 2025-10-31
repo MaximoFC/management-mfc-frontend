@@ -63,14 +63,14 @@ export const getActiveWarranties = async (clientId, bikeId) => {
 };
 
 export const generateBudgetPdf = async (budgetData) => {
-  const response = await fetch(`${api}/budgets/generate-pdf`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(budgetData),
-  });
+  try {
+    const response = await api.post("/budgets/generate-pdf", budgetData, {
+      responseType: "blob",
+    });
 
-  if (!response.ok) throw new Error("Error generando PDF");
-
-  const blob = await response.blob();
-  return blob;
+    return response.data;
+  } catch (error) {
+    console.error("Error generando PDF:", error);
+    throw new Error("Error generando PDF");
+  }
 };

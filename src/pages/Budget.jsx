@@ -168,19 +168,21 @@ const Budget = () => {
         ...services
           .filter(s => selectedServices.includes(s._id))
           .map(s => ({
+            type: "service",
             name: s.name,
             qty: 1,
             price: Number(s.price_usd) * (dollarRate ?? 0)
           })),
-        ...selectedBikeparts.map(bp => {
-          const part = bikeparts.find(p => p._id === bp.bikepart_id);
-          return {
-            name: part?.description || "Repuesto",
-            qty: bp.amount,
-            price: Number(part?.price_usd || 0) * (dollarRate ?? 0)
-          };
-        })
-      ],
+          ...selectedBikeparts.map(bp => {
+            const part = bikeparts.find(p => p._id === bp.bikepart_id);
+            return {
+              type: "part",
+              name: part?.description || "Repuesto",
+              qty: bp.amount,
+              price: Number(part?.price_usd || 0) * (dollarRate ?? 0)
+            };
+          })
+        ],
       total: totalBudgetARS
     };
 

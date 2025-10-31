@@ -156,7 +156,7 @@ const WorkList = () => {
       const payload = {
         client: {
           name: `${budget.bike_id?.current_owner_id?.name || ""} ${budget.bike_id?.current_owner_id?.surname || ""}`,
-          mobileNum: budget.bike_id?.current_owner_id?.mobileNum || "-"
+          mobileNum: budget.bike_id?.current_owner_id?.mobileNum?.trim() || "-"
         },
         services: budget.services || [],
         total_ars: budget.total_ars || 0
@@ -191,7 +191,7 @@ const WorkList = () => {
       client: {
         name: `${budget.bike_id?.current_owner_id?.name || ""} ${budget.bike_id?.current_owner_id?.surname || ""}`,
         dni: budget.bike_id?.current_owner_id?.dni || "-",
-        mobileNum: budget.bike_id?.current_owner_id?.mobileNum || "-"
+        mobileNum: budget.bike_id?.current_owner_id?.mobileNum?.trim() || "-"
       },
       bike: {
         brand: budget.bike_id?.brand || "-",
