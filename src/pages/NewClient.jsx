@@ -1,15 +1,13 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { addClient } from "../services/clientService";
 import Modal from "../components/Modal"; // Asegurate de importar correctamente
 
-function NewClient({ showModal, onClose }) {
+function NewClient({ showModal, onClose, onClientAdded }) {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [mobileNum, setMobileNum] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = async () => {
     setError("");
@@ -17,7 +15,11 @@ function NewClient({ showModal, onClose }) {
     try {
       await addClient({ name, surname, mobileNum });
       onClose(); // Cerrar modal
-      navigate("/clientes");
+      if (onClientAdded) onClientAdded();
+      // resetear formulario
+      setName("");
+      setSurname("");
+      setMobileNum("");
     } catch (err) {
       setError(err.message);
       setLoading(false);
