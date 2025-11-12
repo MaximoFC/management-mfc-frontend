@@ -21,6 +21,7 @@ const ClientList = () => {
   const { setSearchPlaceholder, setOnSearch, setSearchTerm } = useSearch();
 
   const fetchData = async () => {
+<<<<<<< HEAD
       try {
         setLoading(true);
         const data = await fetchClients(searchTerm);
@@ -61,6 +62,48 @@ const ClientList = () => {
         setLoading(false);
       }
     };
+=======
+    try {
+      setLoading(true);
+      const data = await fetchClients(searchTerm);
+
+      const now = new Date();
+      const clientsWithBikes = await Promise.all(
+        data.map(async (client) => {
+          const bikes = await fetchBikesByClient(client._id);
+          return { ...client, bikes };
+        })
+      );
+
+      const sortedClients = [...clientsWithBikes].sort((a, b) => {
+        const nameA = `${a.name} ${a.surname}`.toLowerCase();
+        const nameB = `${b.name} ${b.surname}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      setClients(sortedClients);
+
+      const totalBikes = clientsWithBikes.reduce(
+        (sum, c) => sum + c.bikes.length,
+        0
+      );
+      setBikeCount(totalBikes);
+
+      const recent = clientsWithBikes.filter((c) => {
+        const created = new Date(c.createdAt);
+        const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+        return diffDays <= 30;
+      });
+
+      setRecentClients(recent.length);
+      setCurrentPage(1);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+>>>>>>> 113110cba41e7cff380bce569cbe5f86b6adf40b
 
   useEffect(() => {
     fetchData();
