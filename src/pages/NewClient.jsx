@@ -9,24 +9,20 @@ function NewClient({ showModal, onClose, onClientAdded }) {
   const [mobileNum, setMobileNum] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-<<<<<<< HEAD
 
   const resetForm = () => {
     setName("");
     setSurname("");
     setMobileNum("");
     setError("");
-    setLoading("");
+    setLoading(false);
   };
-=======
->>>>>>> 113110cba41e7cff380bce569cbe5f86b6adf40b
 
   const handleSubmit = async () => {
     setError("");
     setLoading(true);
     try {
       await addClient({ name, surname, mobileNum });
-<<<<<<< HEAD
       toast.success("Cliente agregado con éxito");
       
       //Avisar al componente padre que se agregó un cliente
@@ -34,14 +30,6 @@ function NewClient({ showModal, onClose, onClientAdded }) {
 
       resetForm();
       onClose();
-=======
-      onClose(); // Cerrar modal
-      if (onClientAdded) onClientAdded();
-      // resetear formulario
-      setName("");
-      setSurname("");
-      setMobileNum("");
->>>>>>> 113110cba41e7cff380bce569cbe5f86b6adf40b
     } catch (err) {
       setError(err.message);
       toast.error("Ocurrió un error al agregar el cliente");
