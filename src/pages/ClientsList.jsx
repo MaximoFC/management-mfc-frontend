@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import { fetchClients } from "../services/clientService";
 import { useSearch } from "../context/SearchContext";
-import { useNavigate } from "react-router-dom";
 import { fetchBikesByClient } from "../services/bikeService";
 import NewClient from "./NewClient";
 
@@ -21,8 +20,7 @@ const ClientList = () => {
 
   const { setSearchPlaceholder, setOnSearch, setSearchTerm } = useSearch();
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async () => {
       try {
         setLoading(true);
         const data = await fetchClients(searchTerm);
@@ -64,13 +62,9 @@ const ClientList = () => {
       }
     };
 
+  useEffect(() => {
     fetchData();
   }, [searchTerm]);
-
-  const paginatedClients = clients.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   useEffect(() => {
     setSearchPlaceholder("Buscar cliente por nombre");
@@ -85,6 +79,11 @@ const ClientList = () => {
       setSearchTerm("");
     };
   }, []);
+
+  const paginatedClients = clients.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <Layout>
@@ -116,7 +115,11 @@ const ClientList = () => {
           >
             + Agregar nuevo cliente
           </button>
-          <NewClient showModal={showModal} onClose={() => setShowModal(false)} />
+          <NewClient 
+            showModal={showModal} 
+            onClose={() => setShowModal(false)}
+            onClientAdded={fetchData}
+          />
         </div>
 
         {/* Tabla o mensaje de carga / vacío */}

@@ -1,27 +1,45 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { addClient } from "../services/clientService";
-import Modal from "../components/Modal"; // Asegurate de importar correctamente
+import Modal from "../components/Modal";
+import { toast } from "react-toastify";
 
-function NewClient({ showModal, onClose }) {
+function NewClient({ showModal, onClose, onClientAdded }) {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [mobileNum, setMobileNum] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+
+  const resetForm = () => {
+    setName("");
+    setSurname("");
+    setMobileNum("");
+    setError("");
+    setLoading("");
+  };
 
   const handleSubmit = async () => {
     setError("");
     setLoading(true);
     try {
       await addClient({ name, surname, mobileNum });
-      onClose(); // Cerrar modal
-      navigate("/clientes");
+      toast.success("Cliente agregado con éxito");
+      
+      //Avisar al componente padre que se agregó un cliente
+      if (onClientAdded) onClientAdded();
+
+      resetForm();
+      onClose();
     } catch (err) {
       setError(err.message);
+      toast.error("Ocurrió un error al agregar el cliente");
       setLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   if (!showModal) return null;
@@ -29,7 +47,7 @@ function NewClient({ showModal, onClose }) {
   return (
     <Modal
       title="Agregar nuevo cliente"
-      onClose={onClose}
+      onClose={handleClose}
       onConfirm={handleSubmit}
       confirmText={loading ? "Guardando..." : "Agregar cliente"}
       cancelText="Cancelar"
