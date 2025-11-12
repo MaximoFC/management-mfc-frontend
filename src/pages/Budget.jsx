@@ -11,6 +11,7 @@ import { fetchBikesByClient } from "../services/bikeService";
 import { createBudget, getActiveWarranties, generateBudgetPdf } from "../services/budgetService";
 import Select from "react-select";
 import { toast } from "react-toastify";
+import { SPARE_TYPES } from "../constants/spareTypes";
 
 const Budget = () => {
   const [tab, setTab] = useState("services");
@@ -28,6 +29,9 @@ const Budget = () => {
   const [coveredServices, setCoveredServices] = useState([]);
   const [clients, setClients] = useState([]);
   const [bikes, setBikes] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+
 
   const handleConfirmBudget = async () => {
   try {
@@ -55,7 +59,6 @@ const Budget = () => {
 
   useEffect(() => {
     fetchServices().then(setServices);
-    fetchBikeparts().then(setBikeparts);
     fetchDollarRate()
       .then((rate) => setDollarRate(rate))
       .catch(() => setDollarRate(0));
@@ -70,6 +73,25 @@ const Budget = () => {
       setBikeId(null);
     }
   }, [clientId]);
+
+  // useEffect que permite la carga de repuestos por búsqueda, para evitar sobrecargar el componente
+  useEffect(() => {
+    const fetchFilteredBikeparts = async () => {
+      try {
+        if (searchTerm.length < 2 && !selectedCategory) {
+          setBikeparts([]);
+          return;
+        }
+        const results = await fetchBikeparts(searchTerm, selectedCategory);
+        setBikeparts(results);
+      } catch (err) {
+        console.error("Error fetching filtered parts: ", err);
+      }
+    };
+
+    const timeout = setTimeout(fetchFilteredBikeparts, 400);
+    return () => clearTimeout(timeout);
+  }, [searchTerm, selectedCategory]);
 
   const handleGenerateBudget = () => {
     if (!clientId || !bikeId) {
@@ -357,26 +379,49 @@ const Budget = () => {
             )}
 
             {tab === "parts" && (
-              <table className="w-full min-w-[800px] bg-white">
-                <thead className="text-gray-500 border border-gray-300">
-                  <tr>
-                    <th className="px-4 py-2"></th>
-                    <th className="px-4 py-2 text-left">Código</th>
-                    <th className="px-4 py-2 text-left">Marca</th>
-                    <th className="px-4 py-2 text-left">Tipo</th>
-                    <th className="px-4 py-2 text-left">Descripción</th>
-                    <th className="px-4 py-2 text-left">Stock</th>
-                    <th className="px-4 py-2 text-left">Precio ($)</th>
-                    <th className="px-4 py-2 text-left">Cantidad</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bikeparts
-                    .filter((p) => p.stock > 0)
-                    .map((p) => {
-                      const selected = selectedBikeparts.find(
-                        (item) => item.bikepart_id === p._id
-                      );
+              <>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre o descripción..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-2 flex-1"
+                  />
+
+                  <select
+                    className="border border-gray-300 rounded-md px-3 py-2"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                  >
+                    <option value="">Todas las categorías</option>
+                    {SPARE_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <table className="w-full min-w-[800px] bg-white">
+                  <thead className="text-gray-500 border border-gray-300">
+                    <tr>
+                      <th className="px-4 py-2"></th>
+                      <th className="px-4 py-2 text-left">Código</th>
+                      <th className="px-4 py-2 text-left">Marca</th>
+                      <th className="px-4 py-2 text-left">Tipo</th>
+                      <th className="px-4 py-2 text-left">Descripción</th>
+                      <th className="px-4 py-2 text-left">Stock</th>
+                      <th className="px-4 py-2 text-left">Precio ($)</th>
+                      <th className="px-4 py-2 text-left">Cantidad</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bikeparts
+                      .filter((p) => p.stock > 0)
+                      .map((p) => {
+                        const selected = selectedBikeparts.find(
+                          (item) => item.bikepart_id === p._id
+                        );
                       return (
                         <tr
                           key={p._id}
@@ -412,8 +457,9 @@ const Budget = () => {
                         </tr>
                       );
                     })}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </>
             )}
           </div>
 

@@ -1,14 +1,19 @@
 import api from "./api";
 
-export const fetchBikeparts = async () => {
+export const fetchBikeparts = async (search = "", type = "") => {
   try {
-    const { data } = await api.get("/bikeparts");
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    if (type) params.append("type", type);
+
+    const { data } = await api.get(`/bikeparts?${params.toString()}`);
     return data;
   } catch (err) {
     console.error("Error fetching bikeparts: ", err);
     throw err.response?.data || { message: "Error obteniendo repuestos" };
   }
 };
+
 
 export const searchBikeParts = async (q) => {
   try {
