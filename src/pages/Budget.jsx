@@ -31,7 +31,7 @@ const Budget = () => {
   const [bikes, setBikes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-
+  const [serviceSearch, setServiceSearch] = useState("");
 
   const handleConfirmBudget = async () => {
   try {
@@ -58,7 +58,6 @@ const Budget = () => {
 };
 
   useEffect(() => {
-    fetchServices().then(setServices);
     fetchDollarRate()
       .then((rate) => setDollarRate(rate))
       .catch(() => setDollarRate(0));
@@ -92,6 +91,26 @@ const Budget = () => {
     const timeout = setTimeout(fetchFilteredBikeparts, 400);
     return () => clearTimeout(timeout);
   }, [searchTerm, selectedCategory]);
+
+  //useEffect que permite la carga de servicios por búsqueda, para evitar sobrecargar el componente
+  useEffect(() => {
+    const fetchFilteredServices = async () => {
+      try {
+        if (serviceSearch.length < 2) {
+          setServices([]);
+          return;
+        }
+
+        const results = await fetchServices(serviceSearch);
+        setServices(results);
+      } catch (err) {
+        console.error("Error fetching filtered services: ", err);
+      }
+    };
+
+    const timeout = setTimeout(fetchFilteredServices, 400);
+    return () => clearTimeout(timeout);
+  }, [serviceSearch]);
 
   const handleGenerateBudget = () => {
     if (!clientId || !bikeId) {
@@ -340,42 +359,62 @@ const Budget = () => {
             </div>
           </div>
 
-          {/* Tabla con scroll horizontal */}
           <div className="overflow-x-auto">
             {tab === "services" && (
-              <table className="w-full min-w-[600px] bg-white">
-                <thead className="text-gray-500 border border-gray-300">
-                  <tr>
-                    <th className="px-4 py-2"></th>
-                    <th className="px-4 py-2 text-left">Nombre</th>
-                    <th className="px-4 py-2 text-left">Descripción</th>
-                    <th className="px-4 py-2 text-left">Costo (USD)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {services.map((s) => (
-                    <tr
-                      key={s._id}
-                      className={`border-t border-gray-200 h-16 ${
-                        warrantyMatches.some(w => w.serviceId === s._id)
-                        ? "bg-green-100"
-                        : "hover:bg-gray-50"
-                      }`}
-                    >
-                      <td className="py-3 px-6">
-                        <input
-                          type="checkbox"
-                          checked={selectedServices.includes(s._id)}
-                          onChange={() => toggleService(s._id)}
-                        />
-                      </td>
-                      <td className="py-3 px-6">{s.name}</td>
-                      <td className="py-3 px-6">{s.description}</td>
-                      <td className="py-3 px-6">${s.price_usd}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <>
+                <input
+                  type="text"
+                  placeholder="Buscar servicio..."
+                  value={serviceSearch}
+                  onChange={(e) => setServiceSearch(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-2 mb-4 w-full"
+                />
+                
+                {/* Tabla con scroll horizontal */}
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[600px] bg-white">
+                    <thead className="text-gray-500 border border-gray-300">
+                      <tr>
+                        <th className="px-4 py-2"></th>
+                        <th className="px-4 py-2 text-left">Nombre</th>
+                        <th className="px-4 py-2 text-left">Descripción</th>
+                        <th className="px-4 py-2 text-left">Costo (USD)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {services.length === 0 && serviceSearch.length >= 2 && (
+                        <tr>
+                          <td colSpan="4" className="text-center py-4 text-gray-500">
+                            No se encontraron servicios
+                          </td>
+                        </tr>
+                      )}
+
+                      {services.map((s) => (
+                        <tr
+                          key={s._id}
+                          className={`border-t border-gray-200 h-16 ${
+                            warrantyMatches.some((w) => w.serviceId === s._id)
+                              ? "bg-green-100"
+                              : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <td className="py-3 px-6">
+                            <input 
+                              type="checkbox"
+                              checked={selectedServices.includes(s._id)}
+                              onChange={() => toggleService(s._id)}
+                            />
+                          </td>
+                          <td className="py-3 px-6">{s.name}</td>
+                          <td className="py-3 px-6">{s.description}</td>
+                          <td className="py-3 px-6">{s.price_usd}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
 
             {tab === "parts" && (

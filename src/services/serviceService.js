@@ -1,8 +1,10 @@
 import api from "./api";
 
-export const fetchServices = async () => {
+export const fetchServices = async (query = "") => {
   try {
-    const { data } = await api.get("/services");
+    const { data } = await api.get("/services", {
+      params: query.length >= 2 ? { q: query  } : {}
+    });
     return data;
   } catch (error) {
     console.error("Error fetching services: ", error);
