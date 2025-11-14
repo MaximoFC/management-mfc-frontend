@@ -18,6 +18,8 @@ const StockList = () => {
   const [modalData, setModalData] = useState({ open: false, mode: null, spare: null });
   const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } = useSearch();
   const formRef = useRef(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchBikeparts()
@@ -59,6 +61,10 @@ const StockList = () => {
 
     fetchFiltered();
   }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm]);
 
   const filteredSpares = spare.filter((r) => {
     return filter === "" || r.type?.toLowerCase() === filter.toLowerCase();
@@ -144,6 +150,11 @@ const StockList = () => {
     0
   );
 
+  const paginatedSpares = filteredSpares.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <Layout>
       <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-4">
@@ -206,7 +217,7 @@ const StockList = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredSpares.map((r, i) => {
+              {paginatedSpares.map((r, i) => {
                 let status = "Alto stock";
                 let statusColor = "text-green-600";
                 if (r.stock === 0) {
@@ -256,6 +267,29 @@ const StockList = () => {
               })}
             </tbody>
           </table>
+        </div>
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-4 text-center">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 cursor-pointer text-white"
+          >
+            Anterior
+          </button>
+
+          <span className="text-md">Página {currentPage}</span>
+
+          <button
+            onClick={() =>
+              setCurrentPage((prev) =>
+                prev * itemsPerPage < filteredSpares.length ? prev + 1 : prev
+              )
+            }
+            disabled={currentPage * itemsPerPage >= filteredSpares.length}
+            className="bg-red-500 px-3 py-1 rounded-md disabled:opacity-50 cursor-pointer text-white"
+          >
+            Siguiente
+          </button>
         </div>
       </div>
 
