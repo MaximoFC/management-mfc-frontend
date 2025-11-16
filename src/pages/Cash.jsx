@@ -5,9 +5,10 @@ import {
   IoArrowDownCircleOutline,
 } from "react-icons/io5";
 import { useEffect, useState } from "react";
-import { getBalance, getFlows, createFlow } from "../services/cashService";
+import { getBalance, getFlows, createFlow, getFlowSummary } from "../services/cashService";
 import Modal from "../components/Modal";
 import { toast } from "react-toastify";
+import { useAuth } from "../context/AuthContext";
 
 const Cash = () => {
   const [cash, setCash] = useState({ balance: 0 });
@@ -16,32 +17,34 @@ const Cash = () => {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [filter, setFilter] = useState("today");
   const [currentPage, setCurrentPage] = useState(1);
+  const { loading, isAuthenticated } = useAuth();
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [totalPages, setTotalPages] = useState(1);
 
-  const itemsPerPage = 10;
-  const filterLabels = {
-    today: "hoy",
-    week: "esta semana",
-    month: "este mes",
-  };
+  const [summary, setSummary] = useState({
+    today: { ingresos: 0, egresos: 0, balance: 0 },
+    week: { ingresos: 0, egresos: 0, balance: 0 },
+    month: { ingresos: 0, egresos: 0, balance: 0 },
+  });
 
   useEffect(() => {
+    if (loading || !isAuthenticated) return;
+
     const fetchData = async () => {
       try {
-        const balanceData = await getBalance();
-        setCash(balanceData);
-
-        const flowsData = await getFlows();
-        setFlow(flowsData);
+        setCash(await getBalance());
+        setSummary(await getFlowSummary());
       } catch (error) {
-        setCash({ balance: "Error" });
-        setFlow([]);
-        console.error("Error fetching balance/flows: ", error);
+        toast.error("Error cargando datos");
+        console.error(error);
       }
     };
+
     fetchData();
-  }, []);
+  }, [loading, isAuthenticated]);
+
 
   const handleAddManualFlow = async () => {
     try {
@@ -51,133 +54,143 @@ const Cash = () => {
         description
       });
 
-      const resFlow = await getFlows();
-      setFlow(resFlow);
-      const resBalance = await getBalance();
-      setCash(resBalance);
+      setCash(await getBalance());
+      setSummary(await getFlowSummary());
 
       setType("");
       setAmount("");
       setDescription("");
-      setShowModal("");
+      setShowModal(false);
+
+      toast.success("Movimiento registrado");
     } catch (error) {
       toast.alert("Error al registrar movimiento");
       console.error("Error registering flow: ", error);
     }
   };
 
-  const filterDate = () => {
-    const now = new Date();
-    return flow.filter((mov) => {
-      const movDate = new Date(mov.date);
-      if (filter === "today") {
-        return movDate.toDateString() === now.toDateString();
-      } else if (filter === "week") {
-        const pastWeek = new Date(now);
-        pastWeek.setDate(now.getDate() - 6);
+  const handleApplyDateFilter = async (page = 1) => {
+    try {
+      const params = {
+        page,
+        limit: 10,
+      };
 
-        pastWeek.setHours(0, 0, 0, 0);
-        const endOfToday = new Date(now);
-        endOfToday.setHours(23, 59, 59, 999);
+      if (startDate) params.start = startDate;
+      if (endDate) params.end = endDate;
 
-        const yesterday = new Date(now);
-        yesterday.setDate(now.getDate() - 1);
-        yesterday.setHours(23, 59, 59, 999);
+      const res = await getFlows(params);
 
-        return movDate >= pastWeek && movDate <= yesterday;
-      } else if (filter === "month") {
-        return (
-          movDate.getMonth() === now.getMonth() &&
-          movDate.getFullYear() === now.getFullYear()
-        );
-      } else {
-        return true;
-      }
-    });
+      setFlow(res.items);
+      setTotalPages(res.pages);
+      setCurrentPage(page);
+    } catch (error) {
+      toast.error("Error filtrando movimientos");
+      console.error(error);
+    }
   };
-
-  const flowFilter = filterDate();
-  const income = flowFilter.filter((f) => f.type === "ingreso");
-  const expenses = flowFilter.filter((f) => f.type === "egreso");
-  const totalIncome = income.reduce((sum, f) => sum + f.amount, 0);
-  const totalExpenses = expenses.reduce((sum, f) => sum + f.amount, 0);
-  const balance = totalIncome - totalExpenses;
-
-  const paginatedFlow = flow.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   return (
     <Layout>
       <div className="p-4 flex flex-col gap-4">
-        <div className="flex flex-col bg-red-500 rounded-md shadow-xl h-40 text-white justify-between py-4 px-6 sm:px-10">
+        
+        {/* Tarjeta principal */}
+        <div className="flex flex-col bg-red-500 rounded-md shadow-xl h-40 text-white justify-between py-4 px-6">
           <h2 className="text-xl">Dinero actual en caja</h2>
-          <p className="text-4xl font-bold">${cash.balance.toLocaleString("es-AR")}</p>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+
+          <p className="text-4xl font-bold">
+            ${cash.balance.toLocaleString("es-AR")}
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-2">
             <p className="flex gap-2 items-center">
-              <TfiStatsUp className="w-5 h-5" />+ ${totalIncome.toLocaleString("es-AR")}{" "}
-              {filterLabels[filter]}
+              <TfiStatsUp className="w-5 h-5" />+ $
+              {summary.today.ingresos.toLocaleString("es-AR")} hoy
             </p>
             <p className="flex gap-2 items-center">
-              <TfiStatsDown className="w-5 h-5" />- ${totalExpenses.toLocaleString("es-AR")}{" "}
-              {filterLabels[filter]}
+              <TfiStatsDown className="w-5 h-5" />- $
+              {summary.today.egresos.toLocaleString("es-AR")} hoy
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row bg-gray-200 rounded-md p-4 gap-2">
-            {["today", "week", "month"].map((key) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                className={`flex-1 cursor-pointer rounded-md p-2 border-1 border-gray-500 ${
-                  filter === key ? "bg-white font-semibold" : ""
-                }`}
-              >
-                {filterLabels[key]}
-              </button>
-            ))}
-          </div>
+        {/* RESUMEN GENERAL */}
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 p-6 border-1 border-gray-300 bg-white rounded-md">
-              <div className="flex justify-between items-center">
-                <h3>Ingresos {filterLabels[filter]}</h3>
-                <IoArrowUpCircleOutline className="text-green-500 w-6 h-6" />
-              </div>
-              <p className="text-2xl text-green-500 font-bold">
-                ${totalIncome.toLocaleString("es-AR")}
-              </p>
-              <p className="text-gray-500">{income.length} movimiento/s</p>
-            </div>
+  {/* HOY */}
+  <div className="p-4 bg-white rounded-md shadow border">
+    <h3 className="text-lg font-semibold mb-1">Hoy</h3>
+    <p className="text-green-600 font-bold">
+      + ${summary.today.ingresos.toLocaleString("es-AR")} ingresos
+    </p>
+    <p className="text-red-600 font-bold">
+      - ${summary.today.egresos.toLocaleString("es-AR")} egresos
+    </p>
+    <p className="text-gray-800 font-bold mt-1">
+      Balance: ${summary.today.balance.toLocaleString("es-AR")}
+    </p>
+  </div>
 
-            <div className="flex-1 p-6 border-1 border-gray-300 bg-white rounded-md">
-              <div className="flex justify-between items-center">
-                <h3>Egresos {filterLabels[filter]}</h3>
-                <IoArrowDownCircleOutline className="text-red-500 w-6 h-6" />
-              </div>
-              <p className="text-2xl text-red-500 font-bold">
-                ${totalExpenses.toLocaleString("es-AR")}
-              </p>
-              <p className="text-gray-500">{expenses.length} movimiento/s</p>
-            </div>
+  {/* ESTA SEMANA */}
+  <div className="p-4 bg-white rounded-md shadow border">
+    <h3 className="text-lg font-semibold mb-1">Esta semana</h3>
+    <p className="text-green-600 font-bold">
+      + ${summary.week.ingresos.toLocaleString("es-AR")} ingresos
+    </p>
+    <p className="text-red-600 font-bold">
+      - ${summary.week.egresos.toLocaleString("es-AR")} egresos
+    </p>
+    <p className="text-gray-800 font-bold mt-1">
+      Balance: ${summary.week.balance.toLocaleString("es-AR")}
+    </p>
+  </div>
 
-            <div className="flex-1 p-6 border-1 border-gray-300 bg-white rounded-md">
-              <div className="flex justify-between items-center">
-                <h3>Balance {filterLabels[filter]}</h3>
-                <TfiStatsUp className="w-5 h-5" />
-              </div>
-              <p className="text-2xl text-green-500 font-bold">${balance.toLocaleString("es-AR")}</p>
-              <p className="text-gray-500">Diferencia ingresos - egresos</p>
-            </div>
-          </div>
+  {/* ESTE MES */}
+  <div className="p-4 bg-white rounded-md shadow border">
+    <h3 className="text-lg font-semibold mb-1">Este mes</h3>
+    <p className="text-green-600 font-bold">
+      + ${summary.month.ingresos.toLocaleString("es-AR")} ingresos
+    </p>
+    <p className="text-red-600 font-bold">
+      - ${summary.month.egresos.toLocaleString("es-AR")} egresos
+    </p>
+    <p className="text-gray-800 font-bold mt-1">
+      Balance: ${summary.month.balance.toLocaleString("es-AR")}
+    </p>
+  </div>
+
+</div>
+
+
+        {/* FILTROS DE FECHA */}
+        <div className="flex gap-4 bg-gray-200 p-4 rounded-md">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="p-2 border rounded-md"
+          />
+
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="p-2 border rounded-md"
+          />
+
+          <button
+            className="bg-red-500 text-white p-2 rounded-md cursor-pointer"
+            onClick={() => handleApplyDateFilter(1)}
+          >
+            Filtrar
+          </button>
         </div>
 
+        {/* HISTORIAL */}
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
             <h2 className="text-2xl font-bold">Historial de movimientos</h2>
+
             <button
               className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md cursor-pointer"
               onClick={() => setShowModal(true)}
@@ -186,6 +199,7 @@ const Cash = () => {
             </button>
           </div>
 
+          {/* MODAL */}
           {showModal && (
             <Modal
               title="Movimiento manual"
@@ -197,9 +211,9 @@ const Cash = () => {
             >
               <div className="flex flex-col gap-4">
                 <select
-                  className="border p-2 rounded"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
+                  className="border p-2 rounded"
                 >
                   <option value="">Seleccionar tipo</option>
                   <option value="ingreso">Ingreso</option>
@@ -225,9 +239,10 @@ const Cash = () => {
             </Modal>
           )}
 
+          {/* TABLA */}
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white">
-              <thead className="text-gray-500 border-1 border-gray-300">
+            <table className="min-w-full bg-white border border-gray-300">
+              <thead className="text-gray-500 bg-gray-100">
                 <tr>
                   <th className="px-4 py-2 text-left">Tipo</th>
                   <th className="px-4 py-2 text-left">Monto</th>
@@ -236,23 +251,28 @@ const Cash = () => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedFlow.map((mov, i) => (
-                  <tr key={i} className="border-t border-gray-200">
-                    <td className="p-3 font-semibold text-sm">
+                {flow.map((mov, idx) => (
+                  <tr key={idx} className="border-t">
+                    <td className="px-4 py-2">
                       {mov.type === "ingreso" ? (
-                        <div className="flex items-center gap-2">
-                          <IoArrowUpCircleOutline className="text-green-500" />
-                          <span className="text-green-500">Ingreso</span>
+                        <div className="flex items-center gap-2 text-green-500">
+                          <IoArrowUpCircleOutline />
+                          Ingreso
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <IoArrowDownCircleOutline className="text-red-500" />
-                          <span className="text-red-500">Egreso</span>
+                        <div className="flex items-center gap-2 text-red-500">
+                          <IoArrowDownCircleOutline />
+                          Egreso
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-2">${mov.amount.toLocaleString("es-AR")}</td>
+
+                    <td className="px-4 py-2">
+                      ${mov.amount.toLocaleString("es-AR")}
+                    </td>
+
                     <td className="px-4 py-2">{mov.description}</td>
+
                     <td className="px-4 py-2">
                       {new Date(mov.date).toLocaleDateString()}
                     </td>
@@ -262,27 +282,28 @@ const Cash = () => {
             </table>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-4 text-center">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 cursor-pointer text-white"
-            >
-              Anterior
-            </button>
-            <span className="text-md">Página {currentPage}</span>
-            <button
-              onClick={() =>
-                setCurrentPage((prev) =>
-                  prev * itemsPerPage < flow.length ? prev + 1 : prev
-                )
-              }
-              disabled={currentPage * itemsPerPage >= flow.length}
-              className="bg-red-500 px-3 py-1 rounded-md disabled:opacity-50 cursor-pointer text-white"
-            >
-              Siguiente
-            </button>
-          </div>
+          {/* PAGINACIÓN */}
+          {flow.length > 0 && (
+            <div className="flex justify-center items-center gap-3 mt-4">
+              <button
+                onClick={() => handleApplyDateFilter(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded-md bg-red-500 text-white disabled:opacity-50 cursor-pointer"
+              >
+                Anterior
+              </button>
+
+              <span className="text-md">Página {currentPage}</span>
+
+              <button
+                onClick={() => handleApplyDateFilter(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 rounded-md bg-red-500 text-white disabled:opacity-50 cursor-pointer"
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </Layout>

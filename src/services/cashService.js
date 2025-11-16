@@ -10,15 +10,30 @@ export const getBalance = async () => {
     }
 };
 
-export const getFlows = async () => {
+export const getFlowSummary = async () => {
     try {
-        const res = await api.get("/cash/flow");
+        const res = await api.get("/cash/flow/summary");
         return res.data;
     } catch (error) {
-        console.error("Error fetching flows: ", error);
+        console.error("Error fetching summary: ", error);
         throw error;
     }
 };
+
+export const getFlows = async (params = {}) => {
+    try {
+        const res = await api.get("/cash/flow", { params });
+        return res.data;
+    } catch (error) {
+        console.error("Error en getFlows:", {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data,
+        });
+        throw error;
+    }
+};
+
 
 export const createFlow = async (flowData) => {
     try {

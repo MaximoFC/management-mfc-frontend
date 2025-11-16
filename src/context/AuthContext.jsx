@@ -34,7 +34,8 @@ export const AuthProvider = ({ children }) => {
                 }
             } catch (error) {
                 console.error("Error verifying profile:", error.message);
-                if (isMounted) logout();
+                localStorage.removeItem("token");
+                setEmployee(null);
             } finally {
                 if (isMounted) setLoading(false);
                 verifying = false;
