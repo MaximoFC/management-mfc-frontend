@@ -5,6 +5,9 @@ import { fetchBudgets, updateBudgetState } from "../services/budgetService";
 import WarrantyModal from "../components/WarrantyModal";
 import { confirmToast } from "../components/ConfirmToast";
 import api from "../services/api";
+import EditBudgetModal from "../components/EditBudgetModal";
+import { FiEdit } from "react-icons/fi";
+import { toast } from "react-toastify";
 
 const STATES = ["iniciado", "en proceso", "terminado", "pagado", "retirado"];
 const STATE_LABELS = {
@@ -24,6 +27,7 @@ const STATE_COLORS = {
 };
 
 const WorkList = () => {
+  const [editBudget, setEditBudget] = useState(null);
   const [showWarrantyModal, setShowWarrantyModal] = useState(false);
   const [pendingWarrantyBudget, setPendingWarrantyBudget] = useState(null);
   const [stats, setStats] = useState({
@@ -38,6 +42,41 @@ const WorkList = () => {
     pagado: [],
     retirado: []
   });
+
+  const openEditModal = (budget) => {
+    setEditBudget(budget);
+  };
+
+  const closeEditModal = () => {
+    setEditBudget(null);
+  };
+
+  const safeId = (id) => {
+    if (!id || id === "undefined" || id === undefined) {
+      console.error("❌ ERROR: budget id está llegando undefined");
+      return null;
+    }
+    return id;
+  };
+
+  const handleSaveEdit = async (updatedData) => {
+    const id = safeId(editBudget?._id);
+
+    if (!id) {
+      toast.error("No se puede actualizar porque el ID del presupuesto es inválido");
+      return;
+    }
+
+    try {
+      await updateBudgetState(id, updatedData);
+      toast.success("Presupuesto actualizado");
+      loadBudgets();
+      setShowEditModal(false);
+    } catch (error) {
+      console.error("Error updating budget:", error);
+      toast.error("No se pudo actualizar el presupuesto");
+    }
+  };
 
   useEffect(() => {
     fetchBudgets().then(budgets => {
@@ -219,7 +258,6 @@ const WorkList = () => {
   }
 };
 
-
   return (
     <Layout>
       <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-6">
@@ -264,6 +302,14 @@ const WorkList = () => {
                             ${snapshot.isDragging ? "ring-2 ring-red-300" : ""
                           }`}
                         >
+                          <div className="flex justify-end mb-1">
+                            <button
+                              onClick={() => openEditModal(budget)}
+                              className="text-gray-500 hover:text-black"
+                            >
+                              <FiEdit className="cursor-pointer h-5 w-5"/>
+                            </button>
+                          </div>
                           <div className="font-semibold">
                             {budget.bike_id?.current_owner_id?.name || "-"} {budget.bike_id?.current_owner_id?.surname || "-"}
                           </div>
@@ -394,7 +440,13 @@ const WorkList = () => {
           }}
         />
       )}
-
+      {editBudget && (
+        <EditBudgetModal
+          budget={editBudget}
+          onClose={closeEditModal}
+          onSave={handleSaveEdit}
+        />
+      )}
       </div>
     </Layout>
   );

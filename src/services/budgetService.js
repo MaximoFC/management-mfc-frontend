@@ -74,3 +74,13 @@ export const generateBudgetPdf = async (budgetData) => {
     throw new Error("Error generando PDF");
   }
 };
+
+export const updateBudgetItems = async (budgetId, itemsData) => {
+  try {
+    const { data } = await api.put(`/budgets/${budgetId}/items`, itemsData);
+    return data;
+  } catch (error) {
+    console.error("Error updating budget items: ", error);
+    throw error.response?.data || { message: "Error al actualizar ítems del presupuesto" };
+  }
+};
