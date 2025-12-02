@@ -7,7 +7,14 @@ import { FaRegEdit } from "react-icons/fa";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import { useSearch } from "../context/SearchContext";
 import { SPARE_TYPES } from "../constants/spareTypes";
-import { fetchBikeparts, searchBikeParts, deleteBikepart, getBikepartById, createBikepart, updateBikepart } from "../services/bikepartService";
+import {
+  fetchBikeparts,
+  searchBikeParts,
+  deleteBikepart,
+  getBikepartById,
+  createBikepart,
+  updateBikepart,
+} from "../services/bikepartService";
 import { createFlow } from "../services/cashService";
 import { toast } from "react-toastify";
 import { confirmToast } from "../components/ConfirmToast";
@@ -15,8 +22,13 @@ import { confirmToast } from "../components/ConfirmToast";
 const StockList = () => {
   const [spare, setSpare] = useState([]);
   const [filter, setFilter] = useState("");
-  const [modalData, setModalData] = useState({ open: false, mode: null, spare: null });
-  const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } = useSearch();
+  const [modalData, setModalData] = useState({
+    open: false,
+    mode: null,
+    spare: null,
+  });
+  const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } =
+    useSearch();
   const formRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -71,19 +83,16 @@ const StockList = () => {
   });
 
   const handleDelete = (id) => {
-    confirmToast(
-      "¿Estás seguro de eliminar este repuesto?",
-      async () => {
-        try {
-          await deleteBikepart(id);
-          setSpare((prev) => prev.filter((item) => item._id !== id));
-          toast.success("Repuesto eliminado correctamente");
-        } catch (error) {
-          console.error("Error deleting spare:", error);
-          toast.error("No se pudo eliminar el repuesto");
-        }
+    confirmToast("¿Estás seguro de eliminar este repuesto?", async () => {
+      try {
+        await deleteBikepart(id);
+        setSpare((prev) => prev.filter((item) => item._id !== id));
+        toast.success("Repuesto eliminado correctamente");
+      } catch (error) {
+        console.error("Error deleting spare:", error);
+        toast.error("No se pudo eliminar el repuesto");
       }
-    );
+    });
   };
 
   const openModal = async (mode, id = null) => {
@@ -95,7 +104,8 @@ const StockList = () => {
     }
   };
 
-  const closeModal = () => setModalData({ open: false, mode: null, spare: null });
+  const closeModal = () =>
+    setModalData({ open: false, mode: null, spare: null });
 
   const handleFormSubmit = async (data) => {
     try {
@@ -174,7 +184,7 @@ const StockList = () => {
           <div className="border border-gray-300 rounded-md py-2 px-4 bg-white">
             <h2>Valor total</h2>
             <p className="text-xl font-bold text-green-500">
-              ${totalInventoryAmount}
+              ${totalInventoryAmount.toFixed(2)}
             </p>
             <p className="text-gray-600 text-sm">Inventario actual</p>
           </div>
@@ -250,10 +260,16 @@ const StockList = () => {
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex gap-2 items-center justify-start sm:justify-center">
-                        <button onClick={() => openModal("update", r._id)} className="cursor-pointer">
+                        <button
+                          onClick={() => openModal("update", r._id)}
+                          className="cursor-pointer"
+                        >
                           <FaRegEdit className="w-5 h-5" />
                         </button>
-                        <button onClick={() => openModal("replenish", r._id)} className="cursor-pointer">
+                        <button
+                          onClick={() => openModal("replenish", r._id)}
+                          className="cursor-pointer"
+                        >
                           <IoMdAddCircleOutline className="w-5 h-5" />
                         </button>
                         <button
