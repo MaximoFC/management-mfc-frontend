@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getProfile } from "../services/authService";
+import api from "../services/api";
 
 const AuthContext = createContext();
 
@@ -7,63 +8,66 @@ export const AuthProvider = ({ children }) => {
     const [employee, setEmployee] = useState(null);
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
-    const isAuthenticated = !!employee;
+
+    const isAuthenticated = !!token && !!employee;
 
     useEffect(() => {
         let isMounted = true;
-        let verifying = false; // evita solicitudes duplicadas
 
         const verifyToken = async () => {
-            if (verifying) return; // si ya se está verificando, no hace nada
-            verifying = true;
-
-            const token = localStorage.getItem("token");
-
-            if (!token) {
+            const storedToken = localStorage.getItem("token");
+            if (!storedToken) {
                 if (isMounted) setLoading(false);
-                verifying = false;
                 return;
             }
 
             try {
                 const employeeData = await getProfile();
-
-                if (isMounted) {
-                    setToken(token);
-                    setEmployee(employeeData);
-                }
+                    if (isMounted) {
+                        setToken(storedToken);
+                        setEmployee(employeeData);
+                    }
             } catch (error) {
                 console.error("Error verifying profile:", error.message);
+
+                if (error.message === "Token expired") {
+                    console.warn("Sesión expirada. Limpiando...");
+                }
+
                 localStorage.removeItem("token");
-                setEmployee(null);
+                localStorage.removeItem("employee");
+
+                if (isMounted) {
+                    setToken(null);
+                    setEmployee(null);
+                }
             } finally {
                 if (isMounted) setLoading(false);
-                verifying = false;
             }
         };
 
         verifyToken();
-
-        return () => {
-            isMounted = false;
-        };
+        return () => { isMounted = false };
     }, []);
-
 
     const login = (employeeData, token) => {
         localStorage.setItem("token", token);
         localStorage.setItem("employee", JSON.stringify(employeeData));
+
         setToken(token);
         setEmployee(employeeData);
+
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     };
 
     const logout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("employee");
+
+        delete api.defaults.headers.common["Authorization"];
+
         setEmployee(null);
         setToken(null);
-        
-        localStorage.removeItem('token');
-        localStorage.removeItem('employee');
-        
         setLoading(false);
     };
 

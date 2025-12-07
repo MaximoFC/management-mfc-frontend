@@ -77,7 +77,7 @@ export const generateBudgetPdf = async (budgetData) => {
 
 export const updateBudgetItems = async (budgetId, itemsData) => {
   try {
-    const { data } = await api.put(`/budgets/${budgetId}/items`, itemsData);
+    const { data } = await api.put(`/budgets/${budgetId}/edit`, itemsData);
     return data;
   } catch (error) {
     console.error("Error updating budget items: ", error);

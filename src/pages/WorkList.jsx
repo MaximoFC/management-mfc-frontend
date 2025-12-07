@@ -8,6 +8,8 @@ import api from "../services/api";
 import EditBudgetModal from "../components/EditBudgetModal";
 import { FiEdit } from "react-icons/fi";
 import { toast } from "react-toastify";
+import { updateBudgetItems } from "../services/budgetService";
+import { useInventoryStore } from "../store/useInventoryStore";
 
 const STATES = ["iniciado", "en proceso", "terminado", "pagado", "retirado"];
 const STATE_LABELS = {
@@ -59,6 +61,8 @@ const WorkList = () => {
     return id;
   };
 
+  const setMultipleBikepartStocks = useInventoryStore(s => s.setMultipleBikepartStocks);
+
   const handleSaveEdit = async (updatedData) => {
     const id = safeId(editBudget?._id);
 
@@ -68,13 +72,78 @@ const WorkList = () => {
     }
 
     try {
-      await updateBudgetState(id, updatedData);
+      const result = await updateBudgetItems(id, updatedData);
+      const updatedBudget = result.budget;
+
+      // Actualizar SOLO la UI localmente
+      setColumns(prev => {
+        const updated = { ...prev };
+
+        const fromKey = Object.keys(updated).find(k =>
+          updated[k].some(b => b._id === updatedBudget._id)
+        );
+
+        if (!fromKey) return prev;
+
+        updated[fromKey] = updated[fromKey].map(b => {
+          if (b._id !== updatedBudget._id) return b;
+
+          return {
+            ...b,
+            ...updatedBudget,
+          
+            // Reinyectar campos poblados que se pierde
+            bike_id: b.bike_id, // siempre conservar
+          
+            services: updatedBudget.services.map(s => {
+              const found = b.services.find(x =>
+                String(x.service_id?._id) === String(s.service_id)
+              );
+              return {
+                ...s,
+                name: found?.name ?? found?.service_id?.name ?? s.name ?? "",
+                description: found?.description ?? found?.service_id?.description ?? ""
+              };
+            }),
+
+            parts: updatedBudget.parts.map(p => {
+              const found = b.parts.find(x =>
+                String(x.bikepart_id?._id) === String(p.bikepart_id)
+              );
+              return {
+                ...p,
+                bikepart_id: {
+                  ...p.bikepart_id,
+                  description: found?.bikepart_id?.description ?? p.description ?? ""
+                }
+              };
+            })
+          };
+        });
+
+        return updated;
+      });
+
+      // Actualizar stocks en el store local en base a lo que viene poblado en budget.parts
+      if (Array.isArray(updatedBudget.parts)) {
+        const stockItems = updatedBudget.parts
+          .map(p => {
+            const bp = p.bikepart_id;
+            if (!bp) return null;
+            return { id: String(bp._id), stock: bp.stock };
+          })
+          .filter(Boolean);
+
+        if (stockItems.length > 0) {
+          setMultipleBikepartStocks(stockItems);
+        }
+      }
+
       toast.success("Presupuesto actualizado");
-      loadBudgets();
-      setShowEditModal(false);
+      setEditBudget(null);
     } catch (error) {
       console.error("Error updating budget:", error);
-      toast.error("No se pudo actualizar el presupuesto");
+      toast.error(error?.message || "No se pudo actualizar el presupuesto");
     }
   };
 
