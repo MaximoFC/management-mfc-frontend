@@ -4,18 +4,19 @@ import { useAuth } from "../context/AuthContext";
 
 export default function InventoryBootstrapper({ children }) {
     const { isAuthenticated } = useAuth();
-    const fetchBootstrap = useInventoryStore((s) => s.fetchBootstrap);
-    const initialized = useInventoryStore((s) => s.initialized);
-    const loadingBootstrap = useInventoryStore((s) => s.loadingBootstrap);
+
+    const fetchAllInventory = useInventoryStore(s => s.fetchAllInventory);
+    const initialized = useInventoryStore(s => s.initialized);
+    const loading = useInventoryStore(s => s.loading);
 
     useEffect(() => {
         if (isAuthenticated && !initialized) {
-            fetchBootstrap();
+            fetchAllInventory();
         }
-    }, [isAuthenticated, initialized, fetchBootstrap]);
+    }, [isAuthenticated, initialized]);
 
-    if (!isAuthenticated || loadingBootstrap) {
-        return <div className="text-center mt-10">Cargando inventario...</div>
+    if (!isAuthenticated || loading) {
+        return <div className="text-center mt-10">Cargando inventario...</div>;
     }
 
     return children;
