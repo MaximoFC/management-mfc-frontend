@@ -24,7 +24,6 @@ const StockList = () => {
     addPart,
     updatePart,
     removePart,
-    fetchAllInventory,
   } = useInventoryStore();
 
   const [filter, setFilter] = useState("");
@@ -40,11 +39,6 @@ const StockList = () => {
   const formRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  // Cargar inventario desde el store
-  useEffect(() => {
-    fetchAllInventory();
-  }, []);
 
   // Configurar buscador global
   useEffect(() => {

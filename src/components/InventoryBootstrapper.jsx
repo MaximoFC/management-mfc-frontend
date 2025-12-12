@@ -5,13 +5,13 @@ import { useAuth } from "../context/AuthContext";
 export default function InventoryBootstrapper({ children }) {
     const { isAuthenticated } = useAuth();
 
-    const fetchAllInventory = useInventoryStore(s => s.fetchAllInventory);
+    const fetchBootstrap = useInventoryStore((s) => s.fetchBootstrap);
     const initialized = useInventoryStore(s => s.initialized);
     const loading = useInventoryStore(s => s.loading);
 
     useEffect(() => {
         if (isAuthenticated && !initialized) {
-            fetchAllInventory();
+            fetchBootstrap();
         }
     }, [isAuthenticated, initialized]);
 
