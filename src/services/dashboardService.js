@@ -1,23 +1,23 @@
 import { getBalance } from "./cashService";
 import { fetchBudgets } from "./budgetService";
 import { fetchClients } from "./clientService";
-import { fetchBikeparts } from "./bikepartService";
+import { useInventoryStore } from "../store/useInventoryStore";
 import { fetchNotifications } from "./notificationService";
 
 export const fetchDashboardData = async () => {
     try {
-        const [cashRes, budgetRes, clientsRes, bikepartsRes, notificationsRes] = await Promise.all([
+        const [cashRes, budgetRes, clientsRes, notificationsRes] = await Promise.all([
             getBalance(),
             fetchBudgets(),
             fetchClients(),
-            fetchBikeparts(),
             fetchNotifications()
         ]);
+        
+        const parts = useInventoryStore.getState().bikeparts || [];
 
         const cash = cashRes?.balance || 0;
         const budgets = budgetRes || [];
         const clients = clientsRes || [];
-        const parts = bikepartsRes || [];
         const notifications = notificationsRes || [];
 
         const lastMonth = new Date();
