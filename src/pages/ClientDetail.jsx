@@ -31,6 +31,9 @@ const ClientDetail = () => {
     const loadClient = async () => {
       try {
         setLoading(true);
+
+        if (!clients || clients.length === 0) return;
+
         const c = clients.find((cl) => cl._id === id);
         if (!c) throw new Error("Cliente no encontrado");
         setClient(c);
@@ -38,7 +41,8 @@ const ClientDetail = () => {
         setEditSurname(c.surname);
         setEditMobileNum(c.mobileNum);
 
-        const clientBikes = bikes.filter((b) => b.current_owner_id === c._id);
+        const clientBikes =
+          bikes?.filter((b) => b.current_owner_id === c._id) || [];
         if (!selectedBike && clientBikes.length > 0) {
           setSelectedBike(clientBikes[0]._id);
         }
@@ -88,7 +92,8 @@ const ClientDetail = () => {
       </Layout>
     );
 
-  const clientBikes = bikes.filter((b) => b.current_owner_id === client._id);
+  const clientBikes =
+    bikes?.filter((b) => b.current_owner_id === client?._id) || [];
 
   const filteredBudgets = budgets
     .filter((b) => b.bike_id?._id === selectedBike)
