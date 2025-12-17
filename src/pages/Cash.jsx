@@ -5,7 +5,12 @@ import {
   IoArrowDownCircleOutline,
 } from "react-icons/io5";
 import { useEffect, useState } from "react";
-import { getBalance, getFlows, createFlow, getFlowSummary } from "../services/cashService";
+import {
+  getBalance,
+  getFlows,
+  createFlow,
+  getFlowSummary,
+} from "../services/cashService";
 import Modal from "../components/Modal";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
@@ -45,13 +50,12 @@ const Cash = () => {
     fetchData();
   }, [loading, isAuthenticated]);
 
-
   const handleAddManualFlow = async () => {
     try {
       await createFlow({
         type,
         amount: Number(amount),
-        description
+        description,
       });
 
       setCash(await getBalance());
@@ -93,7 +97,6 @@ const Cash = () => {
   return (
     <Layout>
       <div className="p-4 flex flex-col gap-4">
-        
         {/* Tarjeta principal */}
         <div className="flex flex-col bg-red-500 rounded-md shadow-xl h-40 text-white justify-between py-4 px-6">
           <h2 className="text-xl">Dinero actual en caja</h2>
@@ -115,55 +118,52 @@ const Cash = () => {
         </div>
 
         {/* RESUMEN GENERAL */}
-<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* HOY */}
+          <div className="p-4 bg-white rounded-md shadow border">
+            <h3 className="text-lg font-semibold mb-1">Hoy</h3>
+            <p className="text-green-600 font-bold">
+              + ${summary.today.ingresos.toLocaleString("es-AR")} ingresos
+            </p>
+            <p className="text-red-600 font-bold">
+              - ${summary.today.egresos.toLocaleString("es-AR")} egresos
+            </p>
+            <p className="text-gray-800 font-bold mt-1">
+              Balance: ${summary.today.balance.toLocaleString("es-AR")}
+            </p>
+          </div>
 
-  {/* HOY */}
-  <div className="p-4 bg-white rounded-md shadow border">
-    <h3 className="text-lg font-semibold mb-1">Hoy</h3>
-    <p className="text-green-600 font-bold">
-      + ${summary.today.ingresos.toLocaleString("es-AR")} ingresos
-    </p>
-    <p className="text-red-600 font-bold">
-      - ${summary.today.egresos.toLocaleString("es-AR")} egresos
-    </p>
-    <p className="text-gray-800 font-bold mt-1">
-      Balance: ${summary.today.balance.toLocaleString("es-AR")}
-    </p>
-  </div>
+          {/* ESTA SEMANA */}
+          <div className="p-4 bg-white rounded-md shadow border">
+            <h3 className="text-lg font-semibold mb-1">Esta semana</h3>
+            <p className="text-green-600 font-bold">
+              + ${summary.week.ingresos.toLocaleString("es-AR")} ingresos
+            </p>
+            <p className="text-red-600 font-bold">
+              - ${summary.week.egresos.toLocaleString("es-AR")} egresos
+            </p>
+            <p className="text-gray-800 font-bold mt-1">
+              Balance: ${summary.week.balance.toLocaleString("es-AR")}
+            </p>
+          </div>
 
-  {/* ESTA SEMANA */}
-  <div className="p-4 bg-white rounded-md shadow border">
-    <h3 className="text-lg font-semibold mb-1">Esta semana</h3>
-    <p className="text-green-600 font-bold">
-      + ${summary.week.ingresos.toLocaleString("es-AR")} ingresos
-    </p>
-    <p className="text-red-600 font-bold">
-      - ${summary.week.egresos.toLocaleString("es-AR")} egresos
-    </p>
-    <p className="text-gray-800 font-bold mt-1">
-      Balance: ${summary.week.balance.toLocaleString("es-AR")}
-    </p>
-  </div>
-
-  {/* ESTE MES */}
-  <div className="p-4 bg-white rounded-md shadow border">
-    <h3 className="text-lg font-semibold mb-1">Este mes</h3>
-    <p className="text-green-600 font-bold">
-      + ${summary.month.ingresos.toLocaleString("es-AR")} ingresos
-    </p>
-    <p className="text-red-600 font-bold">
-      - ${summary.month.egresos.toLocaleString("es-AR")} egresos
-    </p>
-    <p className="text-gray-800 font-bold mt-1">
-      Balance: ${summary.month.balance.toLocaleString("es-AR")}
-    </p>
-  </div>
-
-</div>
-
+          {/* ESTE MES */}
+          <div className="p-4 bg-white rounded-md shadow border">
+            <h3 className="text-lg font-semibold mb-1">Este mes</h3>
+            <p className="text-green-600 font-bold">
+              + ${summary.month.ingresos.toLocaleString("es-AR")} ingresos
+            </p>
+            <p className="text-red-600 font-bold">
+              - ${summary.month.egresos.toLocaleString("es-AR")} egresos
+            </p>
+            <p className="text-gray-800 font-bold mt-1">
+              Balance: ${summary.month.balance.toLocaleString("es-AR")}
+            </p>
+          </div>
+        </div>
 
         {/* FILTROS DE FECHA */}
-        <div className="flex gap-4 bg-gray-200 p-4 rounded-md">
+        <div className="flex flex-col sm:flex-row gap-4 bg-gray-200 p-4 rounded-md">
           <input
             type="date"
             value={startDate}
