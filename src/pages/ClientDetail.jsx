@@ -10,7 +10,6 @@ const ITEMS_PER_PAGE = 5;
 const ClientDetail = () => {
   const { id } = useParams();
   const clients = useInventoryStore((state) => state.clients);
-  const bikes = useInventoryStore((state) => state.bikes);
   const postUpdateClient = useInventoryStore((state) => state.updateClient);
 
   const [client, setClient] = useState(null);
@@ -27,39 +26,36 @@ const ClientDetail = () => {
   const [selectedBike, setSelectedBike] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // --- Cargar cliente ---
   useEffect(() => {
-    const loadClient = async () => {
-      try {
-        setLoading(true);
+    if (!clients || clients.length === 0) return;
 
-        if (!clients || clients.length === 0) return;
+    const c = clients.find((cl) => cl._id === id);
+    if (!c) {
+      setError("Cliente no encontrado");
+      setLoading(false);
+      return;
+    }
 
-        const c = clients.find((cl) => cl._id === id);
-        if (!c) throw new Error("Cliente no encontrado");
-        setClient(c);
-        setEditName(c.name);
-        setEditSurname(c.surname);
-        setEditMobileNum(c.mobileNum);
+    setClient(c);
+    setEditName(c.name);
+    setEditSurname(c.surname);
+    setEditMobileNum(c.mobileNum);
 
-        const clientBikes =
-          bikes?.filter((b) => b.current_owner_id === c._id) || [];
-        if (!selectedBike && clientBikes.length > 0) {
-          setSelectedBike(clientBikes[0]._id);
-        }
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(false);
+  }, [id, clients]);
 
-    loadClient();
-  }, [id, clients, bikes]);
+  // --- Seleccionar la primera bicicleta por defecto ---
+  useEffect(() => {
+    if (client && client.bikes.length > 0 && !selectedBike) {
+      setSelectedBike(client.bikes[0]._id);
+    }
+  }, [client, selectedBike]);
 
   const handleSaveChanges = async () => {
     try {
       setSaving(true);
-      const updated = await updateClientService(id, {
+      const updated = await updateClientService(client._id, {
         name: editName,
         surname: editSurname,
         mobileNum: editMobileNum,
@@ -92,9 +88,9 @@ const ClientDetail = () => {
       </Layout>
     );
 
-  const clientBikes =
-    bikes?.filter((b) => b.current_owner_id === client?._id) || [];
+  const clientBikes = client.bikes || [];
 
+  // --- Presupuestos filtrados y paginación ---
   const filteredBudgets = budgets
     .filter((b) => b.bike_id?._id === selectedBike)
     .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
@@ -188,6 +184,8 @@ const ClientDetail = () => {
             closeModal={() => setShowModal(false)}
           />
         )}
+
+        {/* Aquí podrías renderizar la paginación de presupuestos usando paginatedBudgets */}
       </div>
     </Layout>
   );
