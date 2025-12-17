@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import ClientBikesModal from "../components/ClientBikesModal";
 import { useInventoryStore } from "../store/useInventoryStore";
 import { updateClient as updateClientService } from "../services/clientService";
+import { fetchBudgetsByClient } from "../services/budgetService"; // traer presupuestos
 
 const ITEMS_PER_PAGE = 5;
 
@@ -26,7 +27,7 @@ const ClientDetail = () => {
   const [selectedBike, setSelectedBike] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // --- Cargar cliente ---
+  // --- Cargar cliente desde store ---
   useEffect(() => {
     if (!clients || clients.length === 0) return;
 
@@ -45,12 +46,31 @@ const ClientDetail = () => {
     setLoading(false);
   }, [id, clients]);
 
-  // --- Seleccionar la primera bicicleta por defecto ---
+  // --- Seleccionar primera bicicleta por defecto ---
   useEffect(() => {
     if (client && client.bikes.length > 0 && !selectedBike) {
       setSelectedBike(client.bikes[0]._id);
     }
   }, [client, selectedBike]);
+
+  // --- Cargar presupuestos del cliente ---
+  useEffect(() => {
+    const fetchBudgets = async () => {
+      if (!client) return;
+
+      try {
+        setLoading(true);
+        const budgetsData = await fetchBudgetsByClient(client._id);
+        setBudgets(budgetsData);
+      } catch (e) {
+        setError(e.message || "Error cargando presupuestos");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBudgets();
+  }, [client]);
 
   const handleSaveChanges = async () => {
     try {
@@ -75,12 +95,14 @@ const ClientDetail = () => {
         <div>Cargando...</div>
       </Layout>
     );
+
   if (error)
     return (
       <Layout>
         <div className="text-red-500">Error: {error}</div>
       </Layout>
     );
+
   if (!client)
     return (
       <Layout>
@@ -90,7 +112,7 @@ const ClientDetail = () => {
 
   const clientBikes = client.bikes || [];
 
-  // --- Presupuestos filtrados y paginación ---
+  // --- Filtrado y paginación de presupuestos ---
   const filteredBudgets = budgets
     .filter((b) => b.bike_id?._id === selectedBike)
     .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
@@ -178,14 +200,127 @@ const ClientDetail = () => {
           </div>
         )}
 
+        {/* --- Historial de presupuestos --- */}
+        <div className="mt-4">
+          {filteredBudgets.length === 0 ? (
+            <p className="text-sm text-gray-500">Sin historial de arreglos</p>
+          ) : (
+            <ul className="space-y-4">
+              {paginatedBudgets.map((item) => (
+                <li
+                  key={item._id}
+                  className="border border-gray-300 rounded-lg p-4 shadow-sm bg-white"
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-semibold text-gray-800">
+                      {new Date(item.creation_date).toLocaleDateString("es-AR")}
+                    </h4>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        item.state === "retirado"
+                          ? "bg-green-100 text-green-700"
+                          : item.state === "en proceso"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {item.state.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="text-sm text-gray-700 space-y-1">
+                    <p>
+                      <strong>Cotización usada:</strong> $
+                      {item.dollar_rate_used}
+                    </p>
+                    <p>
+                      <strong>Total USD:</strong> ${item.total_usd} |{" "}
+                      <strong>Total ARS:</strong> ${item.total_ars}
+                    </p>
+                  </div>
+
+                  {/* Servicios */}
+                  {item.services?.length > 0 && (
+                    <div className="mt-3">
+                      <p className="font-semibold text-gray-800 mb-1">
+                        Servicios realizados:
+                      </p>
+                      <ul className="ml-4 list-disc text-sm text-gray-700">
+                        {item.services.map((service, i) => (
+                          <li key={i} className="mb-1">
+                            {service.name} - ${service.price_usd}
+                            {service.warranty?.hasWarranty && (
+                              <span className="ml-2 text-xs text-blue-600">
+                                Garantía activa hasta{" "}
+                                {new Date(
+                                  service.warranty.endDate
+                                ).toLocaleDateString("es-AR")}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Repuestos */}
+                  {item.parts?.length > 0 && (
+                    <div className="mt-3">
+                      <p className="font-semibold text-gray-800 mb-1">
+                        Repuestos utilizados:
+                      </p>
+                      <ul className="ml-4 list-disc text-sm text-gray-700">
+                        {item.parts.map((part, i) => (
+                          <li key={i}>
+                            {part.bikepart_id?.brand} - {part.description} ($
+                            {part.unit_price_usd})
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Empleado */}
+                  {item.employee_id && (
+                    <p className="text-sm text-gray-500 mt-3">
+                      <strong>Técnico:</strong> {item.employee_id.name}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Paginación */}
+          {totalPage > 1 && (
+            <div className="flex gap-2 mt-4 justify-center">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 cursor-pointer text-white"
+              >
+                Anterior
+              </button>
+              <span className="text-md">
+                Página {currentPage} de {totalPage}
+              </span>
+              <button
+                disabled={currentPage === totalPage}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 cursor-pointer text-white"
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
+        </div>
+
         {showModal && (
           <ClientBikesModal
             client={client}
             closeModal={() => setShowModal(false)}
           />
         )}
-
-        {/* Aquí podrías renderizar la paginación de presupuestos usando paginatedBudgets */}
       </div>
     </Layout>
   );
