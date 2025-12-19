@@ -22,15 +22,8 @@ export const getCurrentEmployee = () => {
 };
 
 export const getProfile = async () => {
-    const token = localStorage.getItem('token');
-
     try {
-        const res = await api.get("/profile", {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-
+        const res = await api.get("/profile");
         return res.data;
     } catch (error) {
         throw new Error(error.response?.data?.error || 'Error verifying session');

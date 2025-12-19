@@ -8,10 +8,7 @@ import { IoMdAddCircleOutline } from "react-icons/io";
 import { useSearch } from "../context/SearchContext";
 import { SPARE_TYPES } from "../constants/spareTypes";
 import {
-  fetchBikeparts,
-  searchBikeParts,
   deleteBikepart,
-  getBikepartById,
   createBikepart,
   updateBikepart,
 } from "../services/bikepartService";
@@ -19,93 +16,81 @@ import { createFlow } from "../services/cashService";
 import { toast } from "react-toastify";
 import { confirmToast } from "../components/ConfirmToast";
 
+import { useInventoryStore } from "../store/useInventoryStore";
+
 const StockList = () => {
-  const [spare, setSpare] = useState([]);
+  const {
+    bikeparts,
+    addPart,
+    updatePart,
+    removePart,
+  } = useInventoryStore();
+
   const [filter, setFilter] = useState("");
   const [modalData, setModalData] = useState({
     open: false,
     mode: null,
     spare: null,
   });
+
   const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } =
     useSearch();
+
   const formRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    fetchBikeparts()
-      .then(setSpare)
-      .catch(() => setSpare([]));
-  }, []);
-
+  // Configurar buscador global
   useEffect(() => {
     setSearchPlaceholder("Buscar repuesto por descripción, código o marca");
-
-    setOnSearch(() => (term) => {
-      setSearchTerm(term);
-    });
+    setOnSearch(() => (term) => setSearchTerm(term));
 
     return () => {
       setSearchPlaceholder("Buscar cliente, trabajo o repuesto");
       setOnSearch(null);
       setSearchTerm("");
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const fetchFiltered = async () => {
-      if (!searchTerm) {
-        const data = await fetchBikeparts();
-        setSpare(data);
-        return;
-      }
+  // Filtrado local según search y filter
+  const filtered = bikeparts.filter((p) => {
+    const matchesFilter =
+      filter === "" || p.type?.toLowerCase() === filter.toLowerCase();
 
-      try {
-        const data = await searchBikeParts(searchTerm);
-        setSpare(data);
-      } catch (err) {
-        console.error("Error fetching search results: ", err);
-        setSpare([]);
-      }
-    };
+    const search = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      search === "" ||
+      p.description?.toLowerCase().includes(search) ||
+      p.brand?.toLowerCase().includes(search) ||
+      p.code?.toLowerCase().includes(search);
 
-    fetchFiltered();
-  }, [searchTerm]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filter, searchTerm]);
-
-  const filteredSpares = spare.filter((r) => {
-    return filter === "" || r.type?.toLowerCase() === filter.toLowerCase();
+    return matchesFilter && matchesSearch;
   });
+
+  const paginated = filtered.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const openModal = (mode, spare = null) => {
+    setModalData({ open: true, mode, spare });
+  };
+
+  const closeModal = () =>
+    setModalData({ open: false, mode: null, spare: null });
 
   const handleDelete = (id) => {
     confirmToast("¿Estás seguro de eliminar este repuesto?", async () => {
       try {
         await deleteBikepart(id);
-        setSpare((prev) => prev.filter((item) => item._id !== id));
+        removePart(id);
         toast.success("Repuesto eliminado correctamente");
       } catch (error) {
-        console.error("Error deleting spare:", error);
-        toast.error("No se pudo eliminar el repuesto");
+        console.error("Error deleting bikepart", error);
+        toast.error("Error eliminando repuesto");
       }
     });
   };
-
-  const openModal = async (mode, id = null) => {
-    if (id) {
-      const data = await getBikepartById(id);
-      setModalData({ open: true, mode, spare: data });
-    } else {
-      setModalData({ open: true, mode, spare: null });
-    }
-  };
-
-  const closeModal = () =>
-    setModalData({ open: false, mode: null, spare: null });
 
   const handleFormSubmit = async (data) => {
     try {
@@ -116,60 +101,60 @@ const StockList = () => {
         await createFlow({
           type: "egreso",
           amount: totalCost,
-          description: `Compra de nuevo repuesto ${newPart.description}`,
+          description: `Compra: ${newPart.description}`,
         });
 
-        toast.success("Repuesto agregado con éxito");
-      }
+        addPart(newPart);
 
-      if (modalData.mode === "update") {
-        await updateBikepart(modalData.spare._id, data);
-        toast.info("Repuesto actualizado correctamente");
-      }
+        toast.success("Repuesto agregado");
 
-      if (modalData.mode === "replenish") {
-        const updatedStock = Number(modalData.spare.stock) + Number(data.stock);
+      } else if (modalData.mode === "update") {
+        const updated = await updateBikepart(modalData.spare._id, data);
+        updatePart(updated);
+
+        toast.info("Repuesto actualizado");
+
+      } else if (modalData.mode === "replenish") {
+        const newStock =
+          Number(modalData.spare.stock) + Number(data.stock);
+
+        const updated = await updateBikepart(modalData.spare._id, {
+          ...modalData.spare,
+          stock: newStock,
+        });
+
+        updatePart(updated);
+
         const totalCost = Number(data.stock) * Number(data.amount);
 
-        await updateBikepart(modalData.spare._id, {
-          ...modalData.spare,
-          stock: updatedStock,
-        });
         await createFlow({
           type: "egreso",
           amount: totalCost,
-          description: `Reposición de stock: ${modalData.spare.description}`,
+          description: `Reposición: ${modalData.spare.description}`,
         });
 
-        toast.success("Stock repuesto correctamente");
+        toast.success("Stock repuesto");
       }
 
       closeModal();
-      const updated = await fetchBikeparts();
-      setSpare(updated);
     } catch (err) {
       console.error(err);
-      toast.error("Ocurrió un error al guardar el repuesto");
+      toast.error("Ocurrió un error al guardar");
     }
   };
 
-  const lowStock = spare.filter((r) => r.stock > 0 && r.stock <= 5).length;
-  const withoutStock = spare.filter((r) => r.stock === 0).length;
-  const totalInventoryAmount = spare.reduce(
-    (total, r) => total + r.stock * r.price_usd,
+  // Stats
+  const lowStock = bikeparts.filter((p) => p.stock > 0 && p.stock <= 5).length;
+  const withoutStock = bikeparts.filter((p) => p.stock === 0).length;
+  const totalInventoryAmount = bikeparts.reduce(
+    (acc, p) => acc + p.stock * p.price_usd,
     0
   );
-
-  const paginatedSpares = filteredSpares.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const isFiltering = searchTerm.trim() !== "" || filter.trim() !== "";
 
   return (
     <Layout>
       <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-4">
+        {/* --- STATS --- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div className="border border-gray-300 rounded-md py-2 px-4 bg-white">
             <h2>Stock bajo</h2>
@@ -190,30 +175,29 @@ const StockList = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-start gap-2">
-          <button
-            onClick={() => openModal("create")}
-            className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md w-full sm:w-auto text-center cursor-pointer"
-          >
-            + Ingreso
-          </button>
-        </div>
+        {/* Botón ingreso */}
+        <button
+          onClick={() => openModal("create")}
+          className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md w-full sm:w-auto cursor-pointer"
+        >
+          + Ingreso
+        </button>
 
-        <div>
-          <select
-            className="border border-gray-300 rounded-md w-full bg-white p-2 cursor-pointer"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="">Todos</option>
-            {SPARE_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Filtro */}
+        <select
+          className="border border-gray-300 rounded-md w-full bg-white p-2 cursor-pointer"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        >
+          <option value="">Todos</option>
+          {SPARE_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
 
+        {/* Tabla (igual) */}
         <div className="overflow-x-auto lg:overflow-x-visible">
           <table className="min-w-full bg-white">
             <thead className="text-gray-500 border-b border-gray-300">
@@ -228,8 +212,9 @@ const StockList = () => {
                 <th className="px-4 py-2 text-left">Acciones</th>
               </tr>
             </thead>
+
             <tbody>
-              {(isFiltering ? filteredSpares : paginatedSpares).map((r, i) => {
+              {paginated.map((r) => {
                 let status = "Alto stock";
                 let statusColor = "text-green-600";
                 if (r.stock === 0) {
@@ -244,36 +229,36 @@ const StockList = () => {
                 }
 
                 return (
-                  <tr key={i} className="border-t border-gray-200">
+                  <tr key={r._id} className="border-t border-gray-200">
                     <td className="px-4 py-2">{r.code}</td>
                     <td className="px-4 py-2">{r.type}</td>
                     <td className="px-4 py-2">{r.brand}</td>
+
+                    {/* descripción con hover igual que antes */}
                     <td className="px-4 py-2 max-w-[200px] relative group">
-                      <div className="truncate group-hover:whitespace-normal group-hover:absolute group-hover:z-10 group-hover:bg-white group-hover:p-2 group-hover:shadow-xl group-hover:rounded-md group-hover:max-h-none group-hover:w-[300px] break-words">
+                      <div className="truncate group-hover:whitespace-normal group-hover:absolute group-hover:z-10 group-hover:bg-white group-hover:p-2 group-hover:shadow-xl group-hover:rounded-md group-hover:w-[300px] break-words">
                         {r.description}
                       </div>
                     </td>
+
                     <td className="px-4 py-2">{r.stock}</td>
                     <td className="px-4 py-2">${r.price_usd}</td>
                     <td className={`px-4 py-2 font-semibold ${statusColor}`}>
                       {status}
                     </td>
+
                     <td className="px-4 py-2">
-                      <div className="flex gap-2 items-center justify-start sm:justify-center">
-                        <button
-                          onClick={() => openModal("update", r._id)}
-                          className="cursor-pointer"
-                        >
+                      <div className="flex gap-2 items-center">
+                        <button onClick={() => openModal("update", r)}>
                           <FaRegEdit className="w-5 h-5" />
                         </button>
-                        <button
-                          onClick={() => openModal("replenish", r._id)}
-                          className="cursor-pointer"
-                        >
+
+                        <button onClick={() => openModal("replenish", r)}>
                           <IoMdAddCircleOutline className="w-5 h-5" />
                         </button>
+
                         <button
-                          className="text-red-500 hover:text-red-700 cursor-pointer"
+                          className="text-red-500 hover:text-red-700"
                           onClick={() => handleDelete(r._id)}
                         >
                           <AiOutlineDelete className="w-5 h-5" />
@@ -286,31 +271,31 @@ const StockList = () => {
             </tbody>
           </table>
         </div>
-        {!isFiltering && (
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-4 text-center">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 cursor-pointer text-white"
-            >
-              Anterior
-            </button>
 
-            <span className="text-md">Página {currentPage}</span>
+        {/* Pagination igual */}
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 bg-red-500 text-white rounded-md disabled:opacity-50"
+          >
+            Anterior
+          </button>
 
-            <button
-              onClick={() =>
-                setCurrentPage((prev) =>
-                  prev * itemsPerPage < filteredSpares.length ? prev + 1 : prev
-                )
-              }
-              disabled={currentPage * itemsPerPage >= filteredSpares.length}
-              className="bg-red-500 px-3 py-1 rounded-md disabled:opacity-50 cursor-pointer text-white"
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
+          <span>Página {currentPage}</span>
+
+          <button
+            onClick={() =>
+              setCurrentPage((prev) =>
+                prev * itemsPerPage < filtered.length ? prev + 1 : prev
+              )
+            }
+            disabled={currentPage * itemsPerPage >= filtered.length}
+            className="px-3 py-1 bg-red-500 text-white rounded-md disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
 
       {modalData.open && (
@@ -336,7 +321,6 @@ const StockList = () => {
             initialData={modalData.spare}
             onSubmit={handleFormSubmit}
             mode={modalData.mode}
-            onSubmitFromModal={true}
             formRef={formRef}
           />
         </Modal>

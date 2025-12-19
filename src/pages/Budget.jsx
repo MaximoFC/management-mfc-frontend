@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import Layout from "../components/Layout";
-import { fetchServices } from "../services/serviceService";
-import { fetchBikeparts } from "../services/bikepartService";
 import BudgetModal from "../components/BudgetModal";
 import AddServiceModal from "../components/AddServiceModal";
 import { fetchDollarRate } from "../services/utilsService";
@@ -12,10 +10,16 @@ import { createBudget, getActiveWarranties, generateBudgetPdf } from "../service
 import Select from "react-select";
 import { toast } from "react-toastify";
 import { SPARE_TYPES } from "../constants/spareTypes";
+import { useInventoryStore } from "../store/useInventoryStore";
 
 const ITEMS_PER_PAGE = 10;
 
 const Budget = () => {
+  const allServices = useInventoryStore(state => state.services || []);
+  const addServiceLocal = useInventoryStore(state => state.addServiceLocal);
+  const globalBikeparts = useInventoryStore(state => state.bikeparts || []);
+  const [bikeparts, setBikeparts] = useState(globalBikeparts);
+
   const [tab, setTab] = useState("services");
 
   // Search-visible list
@@ -28,7 +32,6 @@ const Budget = () => {
   const [selectedServices, setSelectedServices] = useState([]);
 
   // Repuestos
-  const [bikeparts, setBikeparts] = useState([]);
   const [selectedBikeparts, setSelectedBikeparts] = useState([]);
 
   // UI / modales
@@ -49,73 +52,91 @@ const Budget = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
 
-  // Carga de datos iniciales
+  // Carga de datos iniciales: dólar y clientes
   useEffect(() => {
+    let mounted = true;
     fetchDollarRate()
-      .then((r) => setDollarRate(r))
-      .catch(() => setDollarRate(0));
-    fetchClients().then(setClients);
+      .then((r) => mounted && setDollarRate(r))
+      .catch(() => mounted && setDollarRate(0));
+
+    fetchClients().then(res => {
+      if (mounted) setClients(Array.isArray(res) ? res: []);
+    }).catch(err => {
+      console.error("Error fetch clients: ", err);
+    });
+
+    return () => { mounted = false; };
   }, []);
 
+  // Bicis por cliente
   useEffect(() => {
     if (!clientId) {
       setBikes([]);
       setBikeId(null);
       return;
     }
-    fetchBikesByClient(clientId).then(setBikes);
+    let mounted = true;
+    fetchBikesByClient(clientId).then(res => {
+      if (mounted) setBikes(Array.isArray(res) ? res : []);
+    }).catch(err => console.error("Error fetching bikes: ", err));
+    return () => { mounted = false };
   }, [clientId]);
+
+  // Sincronizar bikeparts con store global cuando no hay búsqueda activa
+  useEffect(() => {
+    if ((searchTerm?.trim()?.length ?? 0) < 2 && !selectedCategory) {
+      setBikeparts(globalBikeparts || []);
+    }
+  }, [globalBikeparts, searchTerm, selectedCategory]);
 
   // Bikeparts search
   useEffect(() => {
-    const fetchFilteredBikeparts = async () => {
-      try {
-        if (searchTerm.length < 2 && !selectedCategory) {
-          setBikeparts([]);
-          return;
-        }
-        const results = await fetchBikeparts(searchTerm, selectedCategory);
-        setBikeparts(results);
-      } catch (err) {
-        console.error("Error fetching filtered parts: ", err);
-      }
-    };
-    const t = setTimeout(fetchFilteredBikeparts, 400);
-    return () => clearTimeout(t);
-  }, [searchTerm, selectedCategory]);
+    const all = globalBikeparts || [];
 
-  // Service search
+    if (searchTerm.length < 2 && !selectedCategory) {
+      setBikeparts(all);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+
+    const filtered = all.filter(p => {
+      const inText = 
+        p.description.toLowerCase().includes(term) || 
+        p.brand.toLowerCase().includes(term) ||
+        p.code.toLowerCase().includes(term);
+
+      const inCategory = 
+        !selectedCategory || p.type === selectedCategory;
+
+      return inText && inCategory;
+    });
+
+    setBikeparts(filtered);
+  }, [searchTerm, selectedCategory, globalBikeparts]);
+
+  // Búsqueda local de servicios (usa el store global)
   useEffect(() => {
-    let cancelled = false;
-    const fetch = async () => {
-      try {
-        if (!serviceSearch || serviceSearch.length < 2) {
-          setServiceResults([]);
-          setServicePage(1);
-          setServiceTotalPages(1);
-          return;
-        }
+    if (! serviceSearch || serviceSearch.trim().length < 2) {
+      setServiceResults([]);
+      setServiceTotalPages(1);
+      setServicePage(1);
+      return;
+    }
 
-        const results = await fetchServices(serviceSearch);
+    const lower = serviceSearch.trim().toLowerCase();
 
-        if (cancelled) return;
+    const filtered = (allServices || []).filter(s => {
+      const name = (s.name || "").toLowerCase();
+      const desc = (s.description || "").toLowerCase();
+      return name.includes(lower) || desc.includes(lower);
+    });
 
-        const pages = Math.max(1, Math.ceil(results.length / ITEMS_PER_PAGE));
-        setServiceTotalPages(pages);
-        setServicePage(1); // resetear al cambiar search
-        setServiceResults(results);
-      } catch (err) {
-        console.error("Error fetching services:", err);
-        if (!cancelled) setServiceResults([]);
-      }
-    };
-
-    const t = setTimeout(fetch, 350);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [serviceSearch]);
+    const pages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+    setServiceTotalPages(pages);
+    setServicePage(1);
+    setServiceResults(filtered);
+  }, [serviceSearch, allServices]);
 
   // serviceResultsPage: items a mostrar en la tabla de búsqueda
   const serviceResultsPage = useMemo(() => {
@@ -183,7 +204,7 @@ const Budget = () => {
   const totalBudgetUSD = totalServicesUSD + totalBikepartsUSD;
   const totalBudgetARS = totalBudgetUSD * (dollarRate ?? 0);
 
-  // GENERAR PDF: usar selectedServices y selectedBikeparts (persistentes)
+  // GENERAR PDF
   const handleDownloadPdf = async () => {
     const items = [
       ...selectedServices.map(s => ({
@@ -301,6 +322,7 @@ const Budget = () => {
 
   // AddServiceModal -> onSuccess: agregar a resultados visible y opcion de seleccionar
   const handleAddServiceSuccess = (newService) => {
+    addServiceLocal(newService);
     setServiceResults(prev => [newService, ...prev]);
     setSelectedServices(prev => [newService, ...prev]);
     setShowAddService(false);
