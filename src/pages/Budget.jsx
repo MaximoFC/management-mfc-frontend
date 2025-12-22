@@ -23,7 +23,6 @@ const Budget = () => {
   const [tab, setTab] = useState("services");
 
   // Search-visible list
-  const [serviceResults, setServiceResults] = useState([]);
   const [serviceSearch, setServiceSearch] = useState("");
   const [servicePage, setServicePage] = useState(1);
   const [serviceTotalPages, setServiceTotalPages] = useState(1);
@@ -51,6 +50,18 @@ const Budget = () => {
   // Parts search
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+
+  const filteredServices = useMemo(() => {
+    if (!serviceSearch || serviceSearch.trim().length < 2) return allServices;
+
+    const lower = serviceSearch.trim().toLowerCase();
+
+    return (allServices || []).filter(s => {
+      const name = (s.name || "").toLowerCase();
+      const desc = (s.description || "").toLowerCase();
+      return name.includes(lower) || desc.includes(lower);
+    });
+  }, [serviceSearch, allServices]);
 
   // Carga de datos iniciales: dólar y clientes
   useEffect(() => {
@@ -115,34 +126,18 @@ const Budget = () => {
     setBikeparts(filtered);
   }, [searchTerm, selectedCategory, globalBikeparts]);
 
-  // Búsqueda local de servicios (usa el store global)
   useEffect(() => {
-    if (! serviceSearch || serviceSearch.trim().length < 2) {
-      setServiceResults([]);
-      setServiceTotalPages(1);
-      setServicePage(1);
-      return;
-    }
-
-    const lower = serviceSearch.trim().toLowerCase();
-
-    const filtered = (allServices || []).filter(s => {
-      const name = (s.name || "").toLowerCase();
-      const desc = (s.description || "").toLowerCase();
-      return name.includes(lower) || desc.includes(lower);
-    });
-
-    const pages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-    setServiceTotalPages(pages);
+    setServiceTotalPages(
+      Math.max(1, Math.ceil(filteredServices.length / ITEMS_PER_PAGE))
+    );
     setServicePage(1);
-    setServiceResults(filtered);
-  }, [serviceSearch, allServices]);
+  }, [filteredServices]);
 
   // serviceResultsPage: items a mostrar en la tabla de búsqueda
   const serviceResultsPage = useMemo(() => {
     const start = (servicePage - 1) * ITEMS_PER_PAGE;
-    return serviceResults.slice(start, start + ITEMS_PER_PAGE);
-  }, [serviceResults, servicePage]);
+    return filteredServices.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredServices, servicePage]);
 
   const isServiceSelected = (id) => selectedServices.some(s => s._id === id);
 
@@ -320,13 +315,17 @@ const Budget = () => {
     });
   };
 
-  // AddServiceModal -> onSuccess: agregar a resultados visible y opcion de seleccionar
   const handleAddServiceSuccess = (newService) => {
-    addServiceLocal(newService);
-    setServiceResults(prev => [newService, ...prev]);
-    setSelectedServices(prev => [newService, ...prev]);
+    setSelectedServices(prev => {
+      if (prev.some(s => s._id === newService._id)) return prev;
+      return [...prev, newService];
+    });
+
+    setServiceSearch("");
+
     setShowAddService(false);
-    toast.success("Servicio agregado");
+
+    toast.success("Servicio agregado al presupuesto");
   };
 
   const clientOptions = clients.map(c => ({ value: c._id, label: `${c.name} ${c.surname}` }));

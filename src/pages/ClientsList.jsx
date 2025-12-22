@@ -1,71 +1,37 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
-import { fetchClients } from "../services/clientService";
 import { useSearch } from "../context/SearchContext";
-import { fetchBikesByClient } from "../services/bikeService";
 import NewClient from "./NewClient";
+import { useInventoryStore } from "../store/useInventoryStore";
 
 const ClientList = () => {
-  const { searchTerm } = useSearch();
-  const [clients, setClients] = useState([]);
-  const [bikeCount, setBikeCount] = useState(0);
-  const [recentClients, setRecentClients] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { searchTerm, setSearchPlaceholder, setOnSearch, setSearchTerm } =
+    useSearch();
+  const { clients, fetchBootstrap, loadingBootstrap } = useInventoryStore();
+  const [filteredClients, setFilteredClients] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const itemsPerPage = 10;
 
   const navigate = useNavigate();
 
-  const { setSearchPlaceholder, setOnSearch, setSearchTerm } = useSearch();
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchClients(searchTerm);
-
-      const now = new Date();
-      const clientsWithBikes = await Promise.all(
-        data.map(async (client) => {
-          const bikes = await fetchBikesByClient(client._id);
-          return { ...client, bikes };
-        })
-      );
-
-      const sortedClients = [...clientsWithBikes].sort((a, b) => {
-        const nameA = `${a.name} ${a.surname}`.toLowerCase();
-        const nameB = `${b.name} ${b.surname}`.toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-
-      setClients(sortedClients);
-
-      const totalBikes = clientsWithBikes.reduce(
-        (sum, c) => sum + c.bikes.length,
-        0
-      );
-      setBikeCount(totalBikes);
-
-      const recent = clientsWithBikes.filter((c) => {
-        const created = new Date(c.createdAt);
-        const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-        return diffDays <= 30;
-      });
-
-      setRecentClients(recent.length);
-      setCurrentPage(1);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // --- Inicializar bootstrap ---
   useEffect(() => {
-    fetchData();
-  }, [searchTerm]);
+    fetchBootstrap();
+  }, []);
 
+  // --- Filtrado según searchTerm ---
+  useEffect(() => {
+    const term = searchTerm.toLowerCase();
+    const filtered = clients.filter((c) =>
+      `${c.name} ${c.surname}`.toLowerCase().includes(term)
+    );
+    setFilteredClients(filtered);
+    setCurrentPage(1);
+  }, [clients, searchTerm]);
+
+  // --- Configuración de search context ---
   useEffect(() => {
     setSearchPlaceholder("Buscar cliente por nombre");
 
@@ -80,7 +46,17 @@ const ClientList = () => {
     };
   }, []);
 
-  const paginatedClients = clients.slice(
+  // --- Cálculos estadísticos ---
+  const totalBikes = clients.reduce((sum, c) => sum + c.bikes.length, 0);
+  const now = new Date();
+  const recentClients = clients.filter((c) => {
+    const created = new Date(c.createdAt);
+    const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+    return diffDays <= 30;
+  }).length;
+
+  // --- Paginación ---
+  const paginatedClients = filteredClients.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -97,7 +73,7 @@ const ClientList = () => {
           </div>
           <div className="border border-gray-300 rounded-md py-4 px-6 bg-white">
             <h2 className="text-base font-semibold">Bicicletas totales</h2>
-            <p className="text-xl font-bold text-blue-500">{bikeCount}</p>
+            <p className="text-xl font-bold text-blue-500">{totalBikes}</p>
             <p className="text-gray-600 text-sm">En el registro</p>
           </div>
           <div className="border border-gray-300 rounded-md py-4 px-6 bg-white">
@@ -115,15 +91,14 @@ const ClientList = () => {
           >
             + Agregar nuevo cliente
           </button>
-          <NewClient 
-            showModal={showModal} 
+          <NewClient
+            showModal={showModal}
             onClose={() => setShowModal(false)}
-            onClientAdded={fetchData}
           />
         </div>
 
-        {/* Tabla o mensaje de carga / vacío */}
-        {loading ? (
+        {/* Tabla o mensaje */}
+        {loadingBootstrap ? (
           <div>Cargando...</div>
         ) : clients.length === 0 ? (
           <div>No hay clientes registrados.</div>
@@ -176,10 +151,14 @@ const ClientList = () => {
                 <button
                   onClick={() =>
                     setCurrentPage((prev) =>
-                      prev * itemsPerPage < clients.length ? prev + 1 : prev
+                      prev * itemsPerPage < filteredClients.length
+                        ? prev + 1
+                        : prev
                     )
                   }
-                  disabled={currentPage * itemsPerPage >= clients.length}
+                  disabled={
+                    currentPage * itemsPerPage >= filteredClients.length
+                  }
                   className="px-3 py-1 rounded-md bg-red-500 disabled:opacity-50 text-white cursor-pointer"
                 >
                   Siguiente

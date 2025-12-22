@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { addClient } from "../services/clientService";
 import Modal from "../components/Modal";
 import { toast } from "react-toastify";
+import { useInventoryStore } from "../store/useInventoryStore";
+import { addClient as addClientService } from "../services/clientService"; // Backend
 
-function NewClient({ showModal, onClose, onClientAdded }) {
+function NewClient({ showModal, onClose }) {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [mobileNum, setMobileNum] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const addClientToStore = useInventoryStore((state) => state.addClient);
 
   const resetForm = () => {
     setName("");
@@ -22,11 +25,13 @@ function NewClient({ showModal, onClose, onClientAdded }) {
     setError("");
     setLoading(true);
     try {
-      await addClient({ name, surname, mobileNum });
+      // Llamada al backend
+      const newClient = await addClientService({ name, surname, mobileNum });
+
+      // Agregar a la store
+      addClientToStore(newClient);
+
       toast.success("Cliente agregado con éxito");
-      
-      //Avisar al componente padre que se agregó un cliente
-      if (onClientAdded) onClientAdded();
 
       resetForm();
       onClose();
