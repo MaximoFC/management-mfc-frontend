@@ -65,11 +65,9 @@ export const updateBikepartPartial = async (id, payload) => {
   }
 };
 
-export const updateBikepartStock = async (id, stock) => {
+export const updateBikepartStock = async (id, payload) => {
   try {
-    const { data } = await api.patch(`/bikeparts/${id}/stock`, {
-      stock
-    });
+    const { data } = await api.patch(`/bikeparts/${id}/stock`, payload);
     return data;
   } catch (err) {
     console.error(`Error updating stock for bikepart ${id}`, err);

@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import SpareForm from "../components/SpareForm";
 import { updateBikepart } from "../services/bikepartService";
-import { createFlow } from "../services/cashService";
 import { useInventoryStore } from "../store/useInventoryStore";
 import { toast } from "react-toastify";
 
@@ -16,22 +15,10 @@ const ReplenishStock = () => {
     const updateBikepartInStore = useInventoryStore(s => s.updateBikepart);
 
     const handleReplenish = async (data) => {
-        const updatedStock = Number(spare.stock) + Number(data.stock);
-        const totalCost = Number(data.stock) * Number(data.amount);
-
         try {
-            const updated = await updateBikepart(id, {
-                ...spare,
-                stock: updatedStock
-            });
+            const updated = await updateBikepart(id, data);
 
             updateBikepartInStore(updated);
-
-            await createFlow({
-                type: "egreso",
-                amount: totalCost,
-                description: `Reposición de stock: ${spare.description}`
-            });
             
             toast.success("Stock actualizado");
             navigate("/repuestos");
@@ -42,7 +29,7 @@ const ReplenishStock = () => {
     };
 
     return spare ? (
-        <SpareForm initialData={spare} onSubmit={handleReplenish} mode="replenish" />
+        <SpareForm initialData={spare} onSubmit={handleReplenish} mode="stock" />
         ) : (
             <p>Cargando...</p>
     );
