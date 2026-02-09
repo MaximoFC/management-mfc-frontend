@@ -81,6 +81,27 @@ export const deleteBikepart = async (id) => {
   } catch (err) {
     console.error(`Error deleting bikepart with id ${id}`, err);
     throw err.response?.data || { message: "Error eliminando repuesto" };
+  }
+};
 
+export const importBikePartPricesExcel = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const { data } = await api.post(
+      `/bikeparts/prices/import-excel`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      }
+    );
+
+    return data;
+  } catch (err) {
+    console.error("Error importing excel prices: ", err);
+    throw err.response?.data || { message: "Error importando excel" };
   }
 };
