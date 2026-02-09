@@ -11,12 +11,13 @@ import {
   deleteBikepart,
   createBikepart,
   updateBikepart,
-  updateBikepartStock
+  updateBikepartStock,
+  importBikePartPricesExcel
 } from "../services/bikepartService";
 import { toast } from "react-toastify";
 import { confirmToast } from "../components/ConfirmToast";
-
 import { useInventoryStore } from "../store/useInventoryStore";
+import ImportPricesModal from "../components/ImportPricesModal";
 
 const StockList = () => {
   const {
@@ -24,6 +25,7 @@ const StockList = () => {
     addPart,
     updatePart,
     removePart,
+    refreshBikeparts
   } = useInventoryStore();
 
   const formatPrice = (price, currency) => {
@@ -52,6 +54,10 @@ const StockList = () => {
   const formRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const importRef = useRef();
 
   // Configurar buscador global
   useEffect(() => {
@@ -138,6 +144,37 @@ const StockList = () => {
     }
   };
 
+  const handleImportExcel = async () => {
+    const file = importRef.current?.getFile();
+
+    if (!file) {
+      toast.error("Seleccioná un archivo Excel");
+      return;
+    }
+
+    try {
+      setImportLoading(true);
+
+      const res = await importBikePartPricesExcel(file);
+
+      toast.success(
+        `Actualizados: ${res.result.updated} | Omitidos: ${res.result.skipped}`
+      );
+
+      if (res.result.notFound.length) {
+        console.warn("No encontrados: ", res.result.notFound);
+      }
+
+      await refreshBikeparts();
+
+      setImportModalOpen(false);
+    } catch (err) {
+      toast.error(err.message || "Error importando Excel");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   // Stats
   const lowStock = bikeparts.filter((p) => p.stock > 0 && p.stock <= 5).length;
   const withoutStock = bikeparts.filter((p) => p.stock === 0).length;
@@ -176,13 +213,22 @@ const StockList = () => {
           </div>
         </div>
 
-        {/* Botón ingreso */}
-        <button
-          onClick={() => openModal("create")}
-          className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md w-full sm:w-auto cursor-pointer"
-        >
-          + Ingreso
-        </button>
+        {/* Botón ingreso + Actualizar precios */}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => openModal("create")}
+            className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md w-full sm:w-auto cursor-pointer"
+          >
+            + Ingreso
+          </button>
+
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="bg-white hover:bg-gray-300 p-2 rounded-md cursor-pointer border-2 border-red-500"
+          >
+            Importar precios Excel
+          </button>
+        </div>
 
         {/* Filtro */}
         <select
@@ -324,6 +370,18 @@ const StockList = () => {
             mode={modalData.mode}
             formRef={formRef}
           />
+        </Modal>
+      )}
+
+      {importModalOpen && (
+        <Modal
+          title="Actualizar precios desde Excel"
+          onClose={() => setImportModalOpen(false)}
+          onConfirm={handleImportExcel}
+          confirmText={importLoading ? "Importando..." : "Importar"}
+          disableConfirm={importLoading}
+        >
+          <ImportPricesModal ref={importRef} />
         </Modal>
       )}
     </Layout>
