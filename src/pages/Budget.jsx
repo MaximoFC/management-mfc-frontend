@@ -14,6 +14,20 @@ import { useInventoryStore } from "../store/useInventoryStore";
 
 const ITEMS_PER_PAGE = 10;
 
+const getPartPriceUSD = (part, dollarRate) => {
+  if (!part) return 0;
+
+  if (part.currency === "USD") {
+    return Number(part.price || part.price_usd || 0);
+  }
+
+  if (part.currency === "ARS") {
+    return Number(part.price || 0) / (dollarRate || 1);
+  }
+
+  return 0;
+};
+
 const Budget = () => {
   const allServices = useInventoryStore(state => state.services || []);
   const addServiceLocal = useInventoryStore(state => state.addServiceLocal);
@@ -191,16 +205,18 @@ const Budget = () => {
 
   const totalBikepartsUSD = useMemo(() => {
     return selectedBikeparts.reduce((acc, item) => {
-      const part = bikeparts.find(p => p._id === item.bikepart_id) || {};
-      return acc + (Number(part.price_usd || 0) * Number(item.amount || 0));
+      const part = bikeparts.find(p => p._id === item.bikepart_id);
+      const priceUSD = getPartPriceUSD(part, dollarRate);
+      return acc + (priceUSD * Number(item.amount || 0));
     }, 0);
-  }, [selectedBikeparts, bikeparts]);
+  }, [selectedBikeparts, bikeparts, dollarRate]);
 
   const totalBudgetUSD = totalServicesUSD + totalBikepartsUSD;
   const totalBudgetARS = totalBudgetUSD * (dollarRate ?? 0);
 
   // GENERAR PDF
   const handleDownloadPdf = async () => {
+    const priceUSD = getPartPriceUSD(part, dollarRate);
     const items = [
       ...selectedServices.map(s => ({
         type: "service",
@@ -208,13 +224,16 @@ const Budget = () => {
         qty: 1,
         price: Number(s.price_usd || 0) * (dollarRate ?? 0),
       })),
+    
       ...selectedBikeparts.map(bp => {
         const part = bikeparts.find(p => p._id === bp.bikepart_id);
+        const priceUSD = getPartPriceUSD(part, dollarRate);
+      
         return {
           type: "part",
           name: part?.description || "Repuesto",
           qty: bp.amount,
-          price: Number(part?.price_usd || 0) * (dollarRate ?? 0),
+          price: priceUSD * (dollarRate ?? 0),
         };
       })
     ];
@@ -491,7 +510,11 @@ const Budget = () => {
                                   <td>{p.type}</td>
                                   <td className="text-sm text-gray-600">{p.description}</td>
                                   <td>{p.stock}</td>
-                                  <td>${p.price_usd}</td>
+                                  <td>
+                                    {p.currency === "ARS"
+                                      ? `$${p.price.toLocaleString("es-AR")} ARS`
+                                      : `$${p.price.toLocaleString("es-AR")} USD`}
+                                  </td>
                                   <td>
                                     {selected && (
                                       <input
@@ -545,6 +568,8 @@ const Budget = () => {
                     {/* Repuestos */}
                     {selectedBikeparts.map(bp => {
                       const part = bikeparts.find(p => p._id === bp.bikepart_id) || {};
+                      const priceUSD = getPartPriceUSD(part, dollarRate);
+
                       return (
                         <div key={bp.bikepart_id} className="flex justify-between items-center border p-2 rounded">
                           <div>
@@ -552,7 +577,9 @@ const Budget = () => {
                             <div className="text-xs text-gray-600">{part.brand} - {part.code}</div>
                           </div>
                           <div className="flex flex-col items-end">
-                            <div className="font-bold">${(part.price_usd * bp.amount).toLocaleString()}</div>
+                            <div className="font-bold">
+                              ${(priceUSD * bp.amount).toLocaleString("es-AR")}
+                            </div>
                             <div className="text-xs">x{bp.amount}</div>
                             <button className="mt-2 text-sm px-2 py-1 bg-gray-200 rounded"
                               onClick={() => removeSelectedBikepart(bp.bikepart_id)}>
@@ -677,10 +704,11 @@ const Budget = () => {
           }))}
           selectedBikeparts={selectedBikeparts.map(bp => {
             const part = bikeparts.find(p => p._id === bp.bikepart_id);
+            const priceUSD = getPartPriceUSD(part, dollarRate);
             return {
               bikepart_id: bp.bikepart_id,
               name: part?.description || "Repuesto",
-              price: Number(part?.price_usd || 0),
+              price: priceUSD,
               amount: bp.amount,
             };
           })}
