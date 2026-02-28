@@ -14,20 +14,6 @@ import { useInventoryStore } from "../store/useInventoryStore";
 
 const ITEMS_PER_PAGE = 10;
 
-const getPartPriceUSD = (part, dollarRate) => {
-  if (!part) return 0;
-
-  if (part.currency === "USD") {
-    return Number(part.price || part.price_usd || 0);
-  }
-
-  if (part.currency === "ARS") {
-    return Number(part.price || 0) / (dollarRate || 1);
-  }
-
-  return 0;
-};
-
 const Budget = () => {
   const allServices = useInventoryStore(state => state.services || []);
   const addServiceLocal = useInventoryStore(state => state.addServiceLocal);
@@ -195,28 +181,8 @@ const Budget = () => {
     setSelectedBikeparts(prev => prev.filter(item => item.bikepart_id !== id));
   };
 
-  // Totales calculados siempre desde selectedServices / selectedBikeparts
-  const totalServicesUSD = useMemo(() => {
-    return selectedServices.reduce((acc, s) => {
-      const covered = coveredServices.includes(s._id);
-      return acc + (covered ? 0 : Number(s.price_usd || 0));
-    }, 0);
-  }, [selectedServices, coveredServices]);
-
-  const totalBikepartsUSD = useMemo(() => {
-    return selectedBikeparts.reduce((acc, item) => {
-      const part = bikeparts.find(p => p._id === item.bikepart_id);
-      const priceUSD = getPartPriceUSD(part, dollarRate);
-      return acc + (priceUSD * Number(item.amount || 0));
-    }, 0);
-  }, [selectedBikeparts, bikeparts, dollarRate]);
-
-  const totalBudgetUSD = totalServicesUSD + totalBikepartsUSD;
-  const totalBudgetARS = totalBudgetUSD * (dollarRate ?? 0);
-
   // GENERAR PDF
   const handleDownloadPdf = async () => {
-    const priceUSD = getPartPriceUSD(part, dollarRate);
     const items = [
       ...selectedServices.map(s => ({
         type: "service",
@@ -243,7 +209,7 @@ const Budget = () => {
       address: 'Paraguay 1674, Yerba Buena',
       mobileNum: '+54 9 381 547-5600',
       items,
-      total: totalBudgetARS
+      total: totalGeneralARS
     };
 
     try {
@@ -348,6 +314,57 @@ const Budget = () => {
   };
 
   const clientOptions = clients.map(c => ({ value: c._id, label: `${c.name} ${c.surname}` }));
+
+  const getPartPriceUSD = (part, exchangeRate) => {
+    if (!part) return 0;
+
+    if (part.currency === "USD") {
+      return Number(part.price || 0);
+    }
+
+    if (part.currency === "ARS") {
+      if (!exchangeRate) return 0;
+      return Number(part.price || 0) / exchangeRate;
+    }
+
+    return 0;
+  };
+
+  const servicesTotalUSD = useMemo(() => {
+    return selectedServices
+      .filter(s => !coveredServices.includes(s._id))
+      .reduce((acc, s) => acc + Number(s.price_usd || 0), 0);
+  }, [selectedServices, coveredServices]);
+
+  const partsTotalARS = useMemo(() => {
+    return selectedBikeparts.reduce((acc, bp) => {
+      const part = bikeparts.find(p => p._id === bp.bikepart_id);
+      if (!part || part.currency !== "ARS") return acc;
+      return acc + Number(part.price || 0) * bp.amount;
+    }, 0);
+  }, [selectedBikeparts, bikeparts]);
+
+  const partsTotalUSD = useMemo(() => {
+    return selectedBikeparts.reduce((acc, bp) => {
+      const part = bikeparts.find(p => p._id === bp.bikepart_id);
+      if (!part || part.currency !== "USD") return acc;
+      return acc + Number(part.price || 0) * bp.amount;
+    }, 0);
+  }, [selectedBikeparts, bikeparts]);
+
+  const totalGeneralARS = useMemo(() => {
+    if (!dollarRate) return 0;
+
+    const servicesInARS = servicesTotalUSD * dollarRate;
+    const partsUSDinARS = partsTotalUSD * dollarRate;
+
+    return servicesInARS + partsUSDinARS + partsTotalARS;
+  }, [
+    servicesTotalUSD,
+    partsTotalUSD,
+    partsTotalARS,
+    dollarRate
+  ]);
 
   return (
     <Layout>
@@ -568,7 +585,6 @@ const Budget = () => {
                     {/* Repuestos */}
                     {selectedBikeparts.map(bp => {
                       const part = bikeparts.find(p => p._id === bp.bikepart_id) || {};
-                      const priceUSD = getPartPriceUSD(part, dollarRate);
 
                       return (
                         <div key={bp.bikepart_id} className="flex justify-between items-center border p-2 rounded">
@@ -578,7 +594,14 @@ const Budget = () => {
                           </div>
                           <div className="flex flex-col items-end">
                             <div className="font-bold">
-                              ${(priceUSD * bp.amount).toLocaleString("es-AR")}
+                              <div className="font-bold">
+                                <div className="font-bold">
+                                  {part.currency === "USD"
+                                    ? `USD ${(Number(part.price || 0) * bp.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+                                    : `$${(Number(part.price || 0) * bp.amount).toLocaleString("es-AR")}`
+                                  }
+                                </div>
+                              </div>
                             </div>
                             <div className="text-xs">x{bp.amount}</div>
                             <button className="mt-2 text-sm px-2 py-1 bg-gray-200 rounded"
@@ -586,16 +609,15 @@ const Budget = () => {
                               Quitar
                             </button>
                           </div>
+                          <div className="font-bold">
+                            {part.currency === "USD"
+                              ? `USD ${(Number(part.price || 0) * bp.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+                              : `$${(Number(part.price || 0) * bp.amount).toLocaleString("es-AR")}`
+                            }
+                          </div>
                         </div>
                       );
                     })}
-                  </div>
-                  
-                  <div className="mt-4 border-t pt-3">
-                    <div className="flex justify-between">
-                      <div className="text-sm text-gray-600">Total Presupuesto (USD)</div>
-                      <div className="font-bold">${(totalServicesUSD + totalBikepartsUSD).toLocaleString("es-AR")}</div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -603,16 +625,15 @@ const Budget = () => {
           </div>
 
           <p className="text-right text-gray-500 text-sm md:text-base mt-2">
-            * Los precios están expresados en USD - Cotización actual: {dollarRate === null ? "Cargando..." : `$${dollarRate}`}
+
           </p>
         </div>
 
-        {/* Cards resumen (igual a tu captura) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
 
-          {/* --- CARD 1: Servicios seleccionados --- */}
+          {/* CARD 1: Servicios */}
           <div className="bg-white border rounded-xl p-5 shadow-sm">
-            <div className="text-gray-700 font-semibold flex items-center justify-between">
+            <div className="text-gray-700 font-semibold">
               Servicios Seleccionados
             </div>
 
@@ -621,37 +642,46 @@ const Budget = () => {
             </div>
 
             <div className="text-gray-500 text-sm mt-1">
-              Total: ${totalServicesUSD.toLocaleString("es-AR")} USD
+              Total: USD {
+                selectedServices
+                  .filter(s => !coveredServices.includes(s._id))
+                  .reduce((acc, s) => acc + Number(s.price_usd || 0), 0)
+                  .toLocaleString("en-US", { minimumFractionDigits: 2 })
+              }
             </div>
           </div>
-
-          {/* --- CARD 2: Repuestos seleccionados --- */}
+            
+          {/* CARD 2: Repuestos */}
+            <div className="bg-white border rounded-xl p-5 shadow-sm">
+              <div className="text-gray-700 font-semibold">
+                Repuestos Seleccionados
+              </div>
+                        
+              <div className="mt-2 text-3xl font-bold text-green-600">
+                {selectedBikeparts.length}
+              </div>
+                        
+              <div className="text-gray-500 text-sm mt-1">
+                ARS ${partsTotalARS.toLocaleString("es-AR")}
+              </div>
+                        
+              <div className="text-gray-500 text-sm">
+                USD {partsTotalUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </div>
+            </div>
+            
+          {/* CARD 3: Total General */}
           <div className="bg-white border rounded-xl p-5 shadow-sm">
-            <div className="text-gray-700 font-semibold flex items-center justify-between">
-              Repuestos Seleccionados
-            </div>
-
-            <div className="mt-2 text-3xl font-bold text-green-600">
-              {selectedBikeparts.length}
-            </div>
-
-            <div className="text-gray-500 text-sm mt-1">
-              Total: ${totalBikepartsUSD.toLocaleString("es-AR")} USD
-            </div>
-          </div>
-
-          {/* --- CARD 3: Total Estimado --- */}
-          <div className="bg-white border rounded-xl p-5 shadow-sm">
-            <div className="text-gray-700 font-semibold flex items-center justify-between">
+            <div className="text-gray-700 font-semibold">
               Total Estimado
             </div>
-
+            
             <div className="mt-2 text-3xl font-bold text-purple-600">
-              ${totalBudgetUSD.toLocaleString("es-AR")} USD + ${totalBudgetARS.toLocaleString("es-AR")}
+              ${totalGeneralARS.toLocaleString("es-AR")}
             </div>
-
+            
             <div className="text-gray-500 text-sm mt-1">
-              Servicios + Repuestos
+              Total final en pesos (USD convertidos a ${dollarRate || 0})
             </div>
           </div>
 
@@ -712,7 +742,7 @@ const Budget = () => {
               amount: bp.amount,
             };
           })}
-          totalUSD={totalBudgetUSD}
+          totalUSD={servicesTotalUSD + partsTotalUSD}
           onConfirm={handleConfirmBudget}
         />
       )}
