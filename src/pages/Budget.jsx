@@ -726,23 +726,11 @@ const Budget = () => {
       {showModal && (
         <BudgetModal
           closeModal={() => setShowModal(false)}
-          selectedServices={selectedServices.map(s => ({
-            service_id: s._id,
-            name: s.name,
-            price: Number(s.price_usd || 0),
-            covered: coveredServices.includes(s._id),
-          }))}
-          selectedBikeparts={selectedBikeparts.map(bp => {
-            const part = bikeparts.find(p => p._id === bp.bikepart_id);
-            const priceUSD = getPartPriceUSD(part, dollarRate);
-            return {
-              bikepart_id: bp.bikepart_id,
-              name: part?.description || "Repuesto",
-              price: priceUSD,
-              amount: bp.amount,
-            };
-          })}
-          totalUSD={servicesTotalUSD + partsTotalUSD}
+          selectedServices={selectedServices}
+          selectedBikeparts={selectedBikeparts}
+          bikeparts={bikeparts}
+          dollarRate={dollarRate}
+          coveredServices={coveredServices}
           onConfirm={handleConfirmBudget}
         />
       )}
