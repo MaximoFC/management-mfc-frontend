@@ -27,7 +27,8 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
       (budget.parts || []).map(p => ({
         _id: p.bikepart_id?._id || p.bikepart_id || p._id || "",
         description: p.description || p.bikepart_id?.description || "",
-        price: Number(p.unit_price_usd ?? p.price ?? 0),
+        price: Number(p.unit_price ?? 0),
+        currency: p.currency || "USD",
         amount: Number(p.amount || 1)
       }))
     );
@@ -43,30 +44,29 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
   }, [budget]);
 
   const calculateTotal = (newServices, newParts) => {
-    // servicios -> precio USD -> convertir a ARS con dollar_rate_used para mostrar total en ARS
     const rate = Number(budget.dollar_rate_used || 1);
-    const serviceUsdTotal = newServices.reduce((acc, s) => acc + (Number(s.price || 0)), 0);
-    const partsUsdTotal = newParts.reduce(
-      (acc, p) => acc + (Number(p.price || 0) * Number(p.amount || 0)),
+
+    const servicesUsd = newServices.reduce(
+      (acc, s) => acc + Number(s.price || 0),
       0
     );
-    const totalUsd = serviceUsdTotal + partsUsdTotal;
-    const totalArs = totalUsd * rate;
+
+    let partsUsd = 0;
+    let partsArs = 0;
+
+    newParts.forEach(p => {
+      const subtotal = Number(p.price || 0) * Number(p.amount || 0);
+
+      if (p.currency === "ARS") {
+        partsArs += subtotal;
+      } else {
+        partsUsd += subtotal;
+      }
+    });
+
+    const totalArs = partsArs + (servicesUsd + partsUsd) * rate;
+
     return totalArs;
-  };
-
-  const handleConfirm = () => {
-    const payload = {
-      services: services.map(s => ({
-        service_id: s._id,
-      })),
-      bikeparts: parts.map(p => ({
-        bikepart_id: p._id,
-        amount: Number(p.amount || 1),
-      }))
-    };
-
-    onSave(payload);
   };
 
   // Services
@@ -97,7 +97,7 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
 
   // Parts
   const addPart = () => {
-    setParts(prev => [...prev, { _id: "", description: "", price: 0, amount: 1 }]);
+    setParts(prev => [...prev, { _id: "", description: "", price: 0, currency: "USD", amount: 1 }]);
   };
 
   const updatePart = (index, partId) => {
@@ -108,7 +108,10 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
     updated[index] = {
       _id: part._id,
       description: part.description,
-      price: Number(part.price_usd || 0),
+      price: part.pricing_currency === "ARS"
+        ? Number(part.sale_price_ars || 0)
+        : Number(part.price_usd || 0),
+      currency: part.pricing_currency === "ARS" ? "ARS" : "USD",
       amount: 1
     };
 
@@ -178,6 +181,20 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
         )
       )
       .slice(0, 8);
+  };
+
+  const handleConfirm = () => {
+    const payload = {
+      services: services.map(s => ({
+        service_id: s._id
+      })),
+      bikeparts: parts.map(p => ({
+        bikepart_id: p._id,
+        amount: Number(p.amount || 1)
+      }))
+    };
+
+    onSave(payload);
   };
 
   return (
@@ -274,7 +291,7 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
         <div className="flex flex-col gap-2">
           {parts.map((p, idx) => {
             const selectedPart = availableParts.find(x => x._id === p._id) || {};
-            const unitPrice = Number(selectedPart.price_usd || p.price || 0);
+            const unitPrice = Number(p.price || 0);
             const subtotal = unitPrice * Number(p.amount || 0);
 
             return (
