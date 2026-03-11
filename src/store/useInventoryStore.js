@@ -117,4 +117,11 @@ export const useInventoryStore = create((set, get) => ({
       ),
     }));
   },
+
+  // --- Servicios ---
+  addServiceLocal: (newService) => {
+    set((state) => ({
+      services: [newService, ...state.services],
+    }));
+  },
 }));

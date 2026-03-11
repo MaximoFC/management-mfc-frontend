@@ -301,13 +301,17 @@ const Budget = () => {
   };
 
   const handleAddServiceSuccess = (newService) => {
+    // Agregar al store global
+    addServiceLocal(newService);
+
+    // Agregar al presupuesto actual
     setSelectedServices(prev => {
       if (prev.some(s => s._id === newService._id)) return prev;
       return [...prev, newService];
     });
 
+    // Reset de búsqueda
     setServiceSearch("");
-
     setShowAddService(false);
 
     toast.success("Servicio agregado al presupuesto");
