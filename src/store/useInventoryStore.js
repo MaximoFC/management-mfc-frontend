@@ -43,6 +43,15 @@ export const useInventoryStore = create((set, get) => ({
     }
   },
 
+  refreshBikeparts: async () => {
+    try {
+      const bikeparts = await fetchBikeparts();
+      set({ bikeparts });
+    } catch (err) {
+      console.error("Error refreshing bikeparts: ", err);
+    }
+  },
+
   addPart: (newPart) => {
     set((s) => ({
       bikeparts: [...s.bikeparts, newPart],

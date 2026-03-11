@@ -7,6 +7,8 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
   const availableServices = useInventoryStore(s => s.services || []);
   const availableParts = useInventoryStore(s => s.bikeparts || []);
   const setMultipleBikepartStocks = useInventoryStore(s => s.setMultipleBikepartStocks);
+  const [serviceSearchTerms, setServiceSearchTerms] = useState({});
+  const [partSearchTerms, setPartSearchTerms] = useState({});
 
   const [services, setServices] = useState([]);
   const [parts, setParts] = useState([]);
@@ -25,7 +27,8 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
       (budget.parts || []).map(p => ({
         _id: p.bikepart_id?._id || p.bikepart_id || p._id || "",
         description: p.description || p.bikepart_id?.description || "",
-        price: Number(p.unit_price_usd ?? p.price ?? 0),
+        price: Number(p.unit_price ?? 0),
+        currency: p.currency || "USD",
         amount: Number(p.amount || 1)
       }))
     );
@@ -41,30 +44,29 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
   }, [budget]);
 
   const calculateTotal = (newServices, newParts) => {
-    // servicios -> precio USD -> convertir a ARS con dollar_rate_used para mostrar total en ARS
     const rate = Number(budget.dollar_rate_used || 1);
-    const serviceUsdTotal = newServices.reduce((acc, s) => acc + (Number(s.price || 0)), 0);
-    const partsUsdTotal = newParts.reduce(
-      (acc, p) => acc + (Number(p.price || 0) * Number(p.amount || 0)),
+
+    const servicesUsd = newServices.reduce(
+      (acc, s) => acc + Number(s.price || 0),
       0
     );
-    const totalUsd = serviceUsdTotal + partsUsdTotal;
-    const totalArs = totalUsd * rate;
+
+    let partsUsd = 0;
+    let partsArs = 0;
+
+    newParts.forEach(p => {
+      const subtotal = Number(p.price || 0) * Number(p.amount || 0);
+
+      if (p.currency === "ARS") {
+        partsArs += subtotal;
+      } else {
+        partsUsd += subtotal;
+      }
+    });
+
+    const totalArs = partsArs + (servicesUsd + partsUsd) * rate;
+
     return totalArs;
-  };
-
-  const handleConfirm = () => {
-    const payload = {
-      services: services.map(s => ({
-        service_id: s._id,
-      })),
-      bikeparts: parts.map(p => ({
-        bikepart_id: p._id,
-        amount: Number(p.amount || 1),
-      }))
-    };
-
-    onSave(payload);
   };
 
   // Services
@@ -95,7 +97,7 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
 
   // Parts
   const addPart = () => {
-    setParts(prev => [...prev, { _id: "", description: "", price: 0, amount: 1 }]);
+    setParts(prev => [...prev, { _id: "", description: "", price: 0, currency: "USD", amount: 1 }]);
   };
 
   const updatePart = (index, partId) => {
@@ -106,7 +108,10 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
     updated[index] = {
       _id: part._id,
       description: part.description,
-      price: Number(part.price_usd || 0),
+      price: part.pricing_currency === "ARS"
+        ? Number(part.sale_price_ars || 0)
+        : Number(part.price_usd || 0),
+      currency: part.pricing_currency === "ARS" ? "ARS" : "USD",
       amount: 1
     };
 
@@ -128,37 +133,154 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
     setTotal(calculateTotal(services, updated));
   };
 
+  // Actualizar búsqueda de servicios
+  const updateServiceSearch = (index, value) => {
+    setServiceSearchTerms(prev => ({
+      ...prev,
+      [index]: value
+    }));
+  };
+
+  // Actualizar búsqueda de repuestos
+  const updatePartSearch = (index, value) => {
+    setPartSearchTerms(prev => ({
+      ...prev,
+      [index]: value
+    }));
+  };
+
+  // Filtrar servicios
+  const getFilteredServices = (index) => {
+    const term = (serviceSearchTerms[index] || "").toLowerCase();
+    const selectedIds = services.map(s => s._id);
+
+    if (term.length < 2) return [];
+
+    return availableServices
+      .filter(s =>
+        !selectedIds.includes(s._id) &&
+        (s.name.toLowerCase().includes(term) ||
+        (s.description || "").toLowerCase().includes(term))
+      )
+      .slice(0, 8);
+  };
+
+  // Filtrar repuestos
+  const getFilteredParts = (index) => {
+    const term = (partSearchTerms[index] || "").toLowerCase();
+    const selectedIds = parts.map(p => p._id);
+
+    if (term.length < 2) return [];
+
+    return availableParts
+      .filter(p =>
+        !selectedIds.includes(p._id) &&
+        (
+          (p.description || "").toLowerCase().includes(term) ||
+          (p.code || "").toLowerCase().includes(term)
+        )
+      )
+      .slice(0, 8);
+  };
+
+  const handleConfirm = () => {
+    const payload = {
+      services: services.map(s => ({
+        service_id: s._id
+      })),
+      bikeparts: parts.map(p => ({
+        bikepart_id: p._id,
+        amount: Number(p.amount || 1)
+      }))
+    };
+
+    onSave(payload);
+  };
+
   return (
     <Modal title="Editar presupuesto" onClose={onClose} onConfirm={handleConfirm}>
       <div className="space-y-3">
         {/* --- SERVICES --- */}
         <h3 className="text-lg font-semibold mb-2">Servicios</h3>
         <div className="flex flex-col gap-2">
-          {services.map((s, idx) => (
-            <div
-              key={idx}
-              className="flex flex-col sm:flex-row gap-3 items-center sm:items-center w-full"
-            >
-              <select
-                value={s._id}
-                className="border rounded px-3 py-2 w-full sm:flex-1"
-                onChange={(e) => updateService(idx, e.target.value)}
-              >
-                <option value="">Seleccionar servicio...</option>
-                {availableServices.map(srv => (
-                  <option key={srv._id} value={srv._id}>
-                    {srv.name} (${Number(srv.price_usd || 0).toLocaleString()})
-                  </option>
-                ))}
-              </select>
+          {services.map((s, idx) => {
+            const subtotal = Number(s.price || 0);
 
-              <div className="text-sm w-full sm:w-28 text-right">
-                ${Number(s.price || 0).toLocaleString()}
+            return (
+              <div
+                key={idx}
+                className="border rounded-lg p-4 bg-gray-50 space-y-3"
+              > 
+                <div>
+                  <label className="font-medium text-sm text-gray-700">
+                    Servicio
+                  </label>
+                  <button
+                    className="text-red-500 text-sm"
+                    onClick={() => removeService(idx)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar servicio..."
+                    value={
+                      services[idx]?._id
+                        ? services[idx].name
+                        : serviceSearchTerms[idx] || ""
+                    }
+                    onChange={(e) => {
+                      updateServiceSearch(idx, e.target.value);
+                      // Si empieza a escribir de nuevo, limpiar selección
+                      if (services[idx]?._id) {
+                        const updated = [...services];
+                        updated[idx] = { _id: "", name: "", price: 0 };
+                        setServices(updated);
+                      }
+                    }}
+                    className="border rounded px-3 py-2 w-full"
+                  />
+
+                  {/* Dropdown resultados */}
+                  {getFilteredServices(idx).length > 0 && !services[idx]?._id && (
+                    <div className="absolute z-10 bg-white border rounded shadow-md mt-1 w-full max-h-48 overflow-auto">
+                      {getFilteredServices(idx).map(srv => (
+                        <div
+                          key={srv._id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          onClick={() => {
+                            updateService(idx, srv._id);
+                            setServiceSearchTerms(prev => ({
+                              ...prev,
+                              [idx]: ""
+                            }));
+                          }}
+                        >
+                          <div className="font-medium">{srv.name}</div>
+                          <div className="text-xs text-gray-500">
+                            ${Number(srv.price_usd || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span>Precio:</span>
+                  <span>${subtotal.toLocaleString()}</span>
+                </div>
+
+                <div className="flex justify-between font-semibold">
+                  <span>Subtotal:</span>
+                  <span>${subtotal.toLocaleString()}</span>
+                </div>
               </div>
-
-              <button className="text-red-500" onClick={() => removeService(idx)}>✖</button>
-            </div>
-          ))}
+            )
+          })}
           <button onClick={addService} className="mt-2 bg-blue-500 text-white px-4 py-1 rounded">
             + Agregar servicio
           </button>
@@ -169,42 +291,99 @@ const EditBudgetModal = ({ budget, onClose, onSave }) => {
         <div className="flex flex-col gap-2">
           {parts.map((p, idx) => {
             const selectedPart = availableParts.find(x => x._id === p._id) || {};
+            const unitPrice = Number(p.price || 0);
+            const subtotal = unitPrice * Number(p.amount || 0);
+
             return (
               <div
                 key={idx}
-                className="flex flex-col sm:flex-row gap-3 items-center sm:items-center w-full"
+                className="border rounded-lg p-4 bg-gray-50 space-y-3"
               >
-                <select
-                  value={p._id}
-                  className="border rounded px-3 py-2 w-full sm:flex-1 truncate"
-                  onChange={(e) => updatePart(idx, e.target.value)}
-                >
-                  <option value="">Seleccionar repuesto...</option>
-
-                  {availableParts.map(part => (
-                    <option key={part._id} value={part._id}>
-                      {part.description} - ${Number(part.price_usd || 0).toLocaleString()} (stock: {part.stock})
-                    </option>
-                  ))}
-                </select>
-
-                <div className="w-full sm:w-20 text-sm text-right">
-                  ${Number(selectedPart.price_usd || p.price || 0).toLocaleString()}
+                <div className="flex justify-between items-center">
+                  <label className="font-medium text-sm text-gray-700">
+                    Repuesto
+                  </label>
+                  <button
+                    className="text-red-500 text-sm"
+                    onClick={() => removePart(idx)}
+                  >
+                    Eliminar
+                  </button>
                 </div>
+            
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar por código o descripción..."
+                    value={
+                      parts[idx]?._id
+                        ? `${selectedPart.code || ""} - ${selectedPart.description || ""}`
+                        : partSearchTerms[idx] || ""
+                    }
+                    onChange={(e) => {
+                      updatePartSearch(idx, e.target.value);
+                    
+                      // Si empieza a escribir, limpiar selección previa
+                      if (parts[idx]?._id) {
+                        const updated = [...parts];
+                        updated[idx] = { _id: "", description: "", price: 0, amount: 1 };
+                        setParts(updated);
+                      }
+                    }}
+                    className="border rounded px-3 py-2 w-full"
+                  />
 
-                <input
-                  type="number"
-                  min="1"
-                  className="border rounded px-3 py-2 w-full sm:w-20"
-                  value={p.amount}
-                  onChange={(e) => updatePartAmount(idx, e.target.value)}
-                />
-
-                <div className="text-xs text-gray-500 w-full sm:w-28 text-right">
-                  Stock: {selectedPart.stock ?? "-"}
+                  {/* Dropdown resultados */}
+                  {getFilteredParts(idx).length > 0 && !parts[idx]?._id && (
+                    <div className="absolute z-10 bg-white border rounded shadow-md mt-1 w-full max-h-48 overflow-auto">
+                      {getFilteredParts(idx).map(part => (
+                        <div
+                          key={part._id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          onClick={() => {
+                            updatePart(idx, part._id);
+                            setPartSearchTerms(prev => ({
+                              ...prev,
+                              [idx]: ""
+                            }));
+                          }}
+                        >
+                          <div className="font-medium">
+                            {part.code} — {part.description}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Stock: {part.stock} | ${Number(part.price_usd || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-
-                <button className="text-red-500" onClick={() => removePart(idx)}>✖</button>
+                
+                <div className="flex justify-between text-sm">
+                  <span>Precio unitario:</span>
+                  <span>${unitPrice.toLocaleString()}</span>
+                </div>
+                
+                <div className="flex justify-between items-center text-sm">
+                  <span>Cantidad:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    className="border rounded px-2 py-1 w-20 text-right"
+                    value={p.amount}
+                    onChange={(e) => updatePartAmount(idx, e.target.value)}
+                  />
+                </div>
+                
+                <div className="flex justify-between font-semibold">
+                  <span>Subtotal:</span>
+                  <span>${subtotal.toLocaleString()}</span>
+                </div>
+                
+                <div className="text-xs text-gray-500">
+                  Stock disponible: {selectedPart.stock ?? "-"}
+                </div>
               </div>
             );
           })}

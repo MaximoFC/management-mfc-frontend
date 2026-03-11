@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Layout from "../components/Layout";
 import Modal from "../components/Modal";
 import SpareForm from "../components/SpareForm";
@@ -11,12 +11,13 @@ import {
   deleteBikepart,
   createBikepart,
   updateBikepart,
+  updateBikepartStock,
+  importBikePartPricesExcel
 } from "../services/bikepartService";
-import { createFlow } from "../services/cashService";
 import { toast } from "react-toastify";
 import { confirmToast } from "../components/ConfirmToast";
-
 import { useInventoryStore } from "../store/useInventoryStore";
+import ImportPricesModal from "../components/ImportPricesModal";
 
 const StockList = () => {
   const {
@@ -24,7 +25,21 @@ const StockList = () => {
     addPart,
     updatePart,
     removePart,
+    refreshBikeparts
   } = useInventoryStore();
+
+  const formatPrice = (price, currency) => {
+  if (currency === "ARS") {
+    return `$ ${price.toLocaleString("es-AR")}`;
+  }
+  return `USD ${price.toFixed(2)}`;
+};
+
+  const totalInventoryARS = useMemo(() => {
+    return bikeparts
+      .filter(p => p.currency === "ARS")
+      .reduce((acc, p) => acc + p.stock * p.price, 0);
+  }, [bikeparts]);
 
   const [filter, setFilter] = useState("");
   const [modalData, setModalData] = useState({
@@ -39,6 +54,10 @@ const StockList = () => {
   const formRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const importRef = useRef();
 
   // Configurar buscador global
   useEffect(() => {
@@ -95,14 +114,7 @@ const StockList = () => {
   const handleFormSubmit = async (data) => {
     try {
       if (modalData.mode === "create") {
-        const totalCost = Number(data.stock) * Number(data.amount);
         const newPart = await createBikepart(data);
-
-        await createFlow({
-          type: "egreso",
-          amount: totalCost,
-          description: `Compra: ${newPart.description}`,
-        });
 
         addPart(newPart);
 
@@ -114,24 +126,13 @@ const StockList = () => {
 
         toast.info("Repuesto actualizado");
 
-      } else if (modalData.mode === "replenish") {
-        const newStock =
-          Number(modalData.spare.stock) + Number(data.stock);
-
-        const updated = await updateBikepart(modalData.spare._id, {
-          ...modalData.spare,
-          stock: newStock,
-        });
+      } else if (modalData.mode === "stock") {
+        const updated = await updateBikepartStock(
+          modalData.spare._id,
+          data
+        )
 
         updatePart(updated);
-
-        const totalCost = Number(data.stock) * Number(data.amount);
-
-        await createFlow({
-          type: "egreso",
-          amount: totalCost,
-          description: `Reposición: ${modalData.spare.description}`,
-        });
 
         toast.success("Stock repuesto");
       }
@@ -143,13 +144,50 @@ const StockList = () => {
     }
   };
 
+  const handleImportExcel = async () => {
+    const file = importRef.current?.getFile();
+
+    if (!file) {
+      toast.error("Seleccioná un archivo Excel");
+      return;
+    }
+
+    try {
+      setImportLoading(true);
+
+      const res = await importBikePartPricesExcel(file);
+
+      toast.success(
+        `Actualizados: ${res.result.updated} | Omitidos: ${res.result.skipped}`
+      );
+
+      if (res.result.notFound.length) {
+        console.warn("No encontrados: ", res.result.notFound);
+      }
+
+      await refreshBikeparts();
+
+      setImportModalOpen(false);
+    } catch (err) {
+      toast.error(err.message || "Error importando Excel");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   // Stats
   const lowStock = bikeparts.filter((p) => p.stock > 0 && p.stock <= 5).length;
   const withoutStock = bikeparts.filter((p) => p.stock === 0).length;
-  const totalInventoryAmount = bikeparts.reduce(
-    (acc, p) => acc + p.stock * p.price_usd,
-    0
-  );
+
+  const getPrice = (p) => {
+    if (p.currency) return p.price;
+    if (p.pricing_currency === "ARS") return p.sale_price_ars;
+    return p.price_usd;
+  };
+
+  const getCurrency = (p) => {
+    return p.currency ?? p.pricing_currency ?? "USD";
+  };
 
   return (
     <Layout>
@@ -169,19 +207,28 @@ const StockList = () => {
           <div className="border border-gray-300 rounded-md py-2 px-4 bg-white">
             <h2>Valor total</h2>
             <p className="text-xl font-bold text-green-500">
-              ${totalInventoryAmount.toFixed(2)}
+              ${totalInventoryARS.toLocaleString("es-AR")}
             </p>
             <p className="text-gray-600 text-sm">Inventario actual</p>
           </div>
         </div>
 
-        {/* Botón ingreso */}
-        <button
-          onClick={() => openModal("create")}
-          className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md w-full sm:w-auto cursor-pointer"
-        >
-          + Ingreso
-        </button>
+        {/* Botón ingreso + Actualizar precios */}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => openModal("create")}
+            className="bg-red-500 hover:bg-red-700 text-white p-2 rounded-md w-full sm:w-auto cursor-pointer"
+          >
+            + Ingreso
+          </button>
+
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="bg-white hover:bg-gray-300 p-2 rounded-md cursor-pointer border-2 border-red-500"
+          >
+            Importar precios Excel
+          </button>
+        </div>
 
         {/* Filtro */}
         <select
@@ -242,7 +289,7 @@ const StockList = () => {
                     </td>
 
                     <td className="px-4 py-2">{r.stock}</td>
-                    <td className="px-4 py-2">${r.price_usd}</td>
+                    <td className="px-4 py-2">{formatPrice(getPrice(r), getCurrency(r))}</td>
                     <td className={`px-4 py-2 font-semibold ${statusColor}`}>
                       {status}
                     </td>
@@ -253,7 +300,7 @@ const StockList = () => {
                           <FaRegEdit className="w-5 h-5" />
                         </button>
 
-                        <button onClick={() => openModal("replenish", r)}>
+                        <button onClick={() => openModal("stock", r)}>
                           <IoMdAddCircleOutline className="w-5 h-5" />
                         </button>
 
@@ -323,6 +370,18 @@ const StockList = () => {
             mode={modalData.mode}
             formRef={formRef}
           />
+        </Modal>
+      )}
+
+      {importModalOpen && (
+        <Modal
+          title="Actualizar precios desde Excel"
+          onClose={() => setImportModalOpen(false)}
+          onConfirm={handleImportExcel}
+          confirmText={importLoading ? "Importando..." : "Importar"}
+          disableConfirm={importLoading}
+        >
+          <ImportPricesModal ref={importRef} />
         </Modal>
       )}
     </Layout>
