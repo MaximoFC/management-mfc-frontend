@@ -11,6 +11,7 @@ import Select from "react-select";
 import { toast } from "react-toastify";
 import { SPARE_TYPES } from "../constants/spareTypes";
 import { useInventoryStore } from "../store/useInventoryStore";
+import { useBudgetStore } from "../store/useBudgetStore";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -27,40 +28,50 @@ const Budget = () => {
   const [servicePage, setServicePage] = useState(1);
   const [serviceTotalPages, setServiceTotalPages] = useState(1);
 
-  // Persistente: servicios seleccionados
-  const [selectedServices, setSelectedServices] = useState([]);
+  // useBudgetStore services
+  const selectedServices = useBudgetStore((s) => s.selectedServices);
+  const toggleService = useBudgetStore((s) => s.toggleService);
+  const removeService = useBudgetStore((s) => s.removeService);
+  const coveredServices = useBudgetStore((s) => s.coveredServices);
+  const toggleCoveredService = useBudgetStore((s) => s.toggleCoveredService);
 
-  // Repuestos
-  const [selectedBikeparts, setSelectedBikeparts] = useState([]);
+  // useBudgetStore bikeparts
+  const selectedBikeparts = useBudgetStore((s) => s.selectedBikeparts);
+  const addBikepart = useBudgetStore((s) => s.addBikepart);
+  const updateBikepartAmount = useBudgetStore((s) => s.updateBikepartAmount);
+  const removeBikepart = useBudgetStore((s) => s.removeBikepart);
+
+  const clearBudget = useBudgetStore((s) => s.clearBudget);
 
   // UI / modales
   const [showModal, setShowModal] = useState(false);
   const [showAddService, setShowAddService] = useState(false);
   const [showWarrantyModal, setShowWarrantyModal] = useState(false);
   const [warrantyMatches, setWarrantyMatches] = useState([]);
-  const [coveredServices, setCoveredServices] = useState([]); // array de ids
 
   // Meta datos
   const [dollarRate, setDollarRate] = useState(null);
   const [clients, setClients] = useState([]);
   const [bikes, setBikes] = useState([]);
-  const [clientId, setClientId] = useState(null);
-  const [bikeId, setBikeId] = useState(null);
+  const clientId = useBudgetStore((s) => s.clientId);
+  const bikeId = useBudgetStore((s) => s.bikeId);
+
+  const setClientId = useBudgetStore((s) => s.setClientId);
+  const setBikeId = useBudgetStore((s) => s.setBikeId);
 
   // Parts search
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
 
   const filteredServices = useMemo(() => {
-    if (!serviceSearch || serviceSearch.trim().length < 2) return allServices;
+    const search = serviceSearch.trim().toLowerCase();
 
-    const lower = serviceSearch.trim().toLowerCase();
+    if (!search) return allServices;
 
-    return (allServices || []).filter(s => {
-      const name = (s.name || "").toLowerCase();
-      const desc = (s.description || "").toLowerCase();
-      return name.includes(lower) || desc.includes(lower);
-    });
+    return allServices.filter(s =>
+      s.name?.toLowerCase().includes(search) ||
+      s.description?.toLowerCase().includes(search)
+    );
   }, [serviceSearch, allServices]);
 
   // Carga de datos iniciales: dólar y clientes
@@ -139,46 +150,13 @@ const Budget = () => {
     return filteredServices.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredServices, servicePage]);
 
-  const isServiceSelected = (id) => selectedServices.some(s => s._id === id);
-
-  const selectService = (service) => {
-    setSelectedServices(prev => {
-      if (prev.some(s => s._id === service._id)) return prev;
-      return [...prev, service];
-    });
-  };
-
-  const unselectServiceById = (id) => {
-    setSelectedServices(prev => prev.filter(s => s._id !== id));
-    setCoveredServices(prev => prev.filter(x => x !== id));
-  };
-
-  const toggleService = (service) => {
-    if (!service) return;
-    if (isServiceSelected(service._id)) {
-      unselectServiceById(service._id);
-    } else {
-      selectService(service);
-    }
-  };
-
   // Helpers para bikeparts
   const toggleBikepart = (id) => {
-    setSelectedBikeparts(prev => {
-      const exists = prev.find(item => item.bikepart_id === id);
-      if (exists) return prev.filter(item => item.bikepart_id !== id);
-      return [...prev, { bikepart_id: id, amount: 1 }];
-    });
-  };
-
-  const updateBikepartAmount = (id, amount) => {
-    setSelectedBikeparts(prev =>
-      prev.map(item => item.bikepart_id === id ? { ...item, amount: Math.max(1, Number(amount) || 1) } : item)
-    );
+    addBikepart(id);
   };
 
   const removeSelectedBikepart = (id) => {
-    setSelectedBikeparts(prev => prev.filter(item => item.bikepart_id !== id));
+    removeBikepart(id);
   };
 
   // GENERAR PDF
@@ -192,7 +170,7 @@ const Budget = () => {
       })),
     
       ...selectedBikeparts.map(bp => {
-        const part = bikeparts.find(p => p._id === bp.bikepart_id);
+        const part = globalBikeparts.find(p => p._id === bp.bikepart_id);
         const priceUSD = getPartPriceUSD(part, dollarRate);
       
         return {
@@ -245,10 +223,11 @@ const Budget = () => {
       };
 
       await createBudget(payload);
+
       toast.success("Presupuesto generado con éxito");
-      setSelectedServices([]);
-      setSelectedBikeparts([]);
-      setCoveredServices([]);
+
+      clearBudget();
+
       setShowModal(false);
     } catch (err) {
       console.error(err);
@@ -466,7 +445,7 @@ const Budget = () => {
                                 <td className="px-2">
                                   <input
                                     type="checkbox"
-                                    checked={isServiceSelected(s._id)}
+                                    checked={selectedServices.some(ss => ss._id === s._id)}
                                     onChange={() => toggleService(s)}
                                   />
                                 </td>
