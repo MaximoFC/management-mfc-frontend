@@ -20,10 +20,10 @@ const BudgetModal = ({
     if (!part) return acc;
 
     if (part.currency === "USD") {
-      return acc + (Number(part.price || 0) * dollarRate * bp.amount);
+      return acc + (Number(part.price_usd || 0) * dollarRate * bp.amount);
     }
 
-    return acc + (Number(part.price || 0 ) * bp.amount);
+    return acc + (Number(part.price || 0) * bp.amount);
   }, 0);
 
   const totalARS = servicesTotalARS + partsTotalARS;
@@ -77,7 +77,7 @@ const BudgetModal = ({
 
             const priceARS =
               part.currency === "USD"
-                ? Number(part.price || 0) * dollarRate * bp.amount
+                ? Number(part.price_usd || 0) * dollarRate * bp.amount
                 : Number(part.price || 0) * bp.amount;
 
             return (

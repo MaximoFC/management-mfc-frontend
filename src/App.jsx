@@ -9,7 +9,6 @@ import EditSpare from "./pages/EditSpare";
 import ReplenishStock from "./pages/ReplenishStock";
 import Cash from "./pages/Cash";
 import Budget from "./pages/Budget";
-import BudgetPage from "./pages/BudgetPage";
 import WorkList from "./pages/WorkList";
 import ClientList from "./pages/ClientsList";
 import HomeRedirect from "./components/HomeRedirect";
@@ -41,7 +40,6 @@ function App() {
         <Route path="repuestos/reponer/:id" element={<ReplenishStock />} />
         <Route path="caja" element={<Cash />} />
         <Route path="presupuestos" element={<Budget />} />
-        <Route path="presupuestos/nuevo" element={<BudgetPage />} />
         <Route path="trabajos" element={<WorkList />} />
         <Route path="clientes" element={<ClientList />} />
         <Route path="clientes/nuevo" element={<NewClient />} />
