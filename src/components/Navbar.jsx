@@ -1,12 +1,11 @@
 import { Link } from "react-router-dom";
-import Logo from "/Logo MFC.jpg";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { useAuth } from "../context/AuthContext";
 import { useState, useEffect, useRef } from "react";
 import { useSearch } from "../context/SearchContext";
 import { fetchNotifications } from "../services/notificationService";
 
-const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
+const Navbar = ({ setSidebarOpen }) => {
   const { employee, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -76,18 +75,15 @@ const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
   };
 
   return (
-    <nav className="flex justify-between items-center h-25 p-4 w-full border-b-1 border-gray-300">
-      <div className="flex items-center gap-4">
-        <img
-          src={Logo}
-          alt="Logo de MFC"
-          className="w-15 h-15 rounded-xl hidden md:block"
-        />
+    <nav className="flex items-center justify-between w-full h-20 px-4 md:px-6 gap-4">
 
+      {/* Left */}
+      <div className="flex items-center gap-3 flex-1 md:flex-none">
+        
+        {/* Mobile menu */}
         <button
-          className="md:hidden p-2 rounded-md hover:bg-gray-200"
+          className="md:hidden p-2 rounded-md hover:bg-gray-100"
           onClick={() => setSidebarOpen(true)}
-          aria-label="Abrir menú"
         >
           <svg
             className="w-6 h-6"
@@ -103,91 +99,129 @@ const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
             />
           </svg>
         </button>
+
+        {/* Search */}
+        <div className="block md:hidden w-full">
+          <input
+            type="text"
+            placeholder={searchPlaceHolder}
+            className="border border-gray-300 rounded-xl px-4 py-2 w-full"
+            value={searchTerm}
+            onChange={handleChange}
+          />
+        </div>
       </div>
 
-      <div className="w-full md:w-1/2 mx-4">
-        <input
-          type="text"
-          placeholder={searchPlaceHolder}
-          className="border-1 border-gray-300 rounded-xl p-2 w-full"
-          value={searchTerm}
-          onChange={handleChange}
-        />
-      </div>
-      <div className="flex gap-4 relative">
-        <button
-          className="relative flex justify-center cursor-pointer p-2 w-11 border-1 border-gray-500 rounded-full hover:bg-gray-200"
-          ref={bellRef}
-          onClick={() => setShowNotifications(!showNotifications)}
+    {/* Search desktop */}
+    <div className="hidden md:block flex-1 max-w-md">
+      <input
+        type="text"
+        placeholder={searchPlaceHolder}
+        className="border border-gray-300 rounded-xl px-4 py-2 w-full"
+        value={searchTerm}
+        onChange={handleChange}
+      />
+    </div>
+
+    {/* Right */}
+    <div className="flex items-center gap-3 relative">
+
+      {/* Notifications */}
+      <button
+        className="relative flex items-center justify-center cursor-pointer p-1.5 w-10 h-10 border border-gray-300 rounded-full hover:bg-gray-100"
+        ref={bellRef}
+        onClick={() => setShowNotifications(!showNotifications)}
+      >
+        <IoIosNotificationsOutline className="h-6 w-6" />
+
+        {notifications.some((n) => !n.seen) && (
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full" />
+        )}
+      </button>
+
+      {/* Dropdown de notificaciones */}
+      {showNotifications && (
+        <div
+          className="absolute top-14 right-0 w-80 bg-white border border-gray-300 rounded-md shadow-md z-50 p-4"
+          ref={notificationRef}
         >
-          <IoIosNotificationsOutline className="h-7 w-7" />
-          {notifications.some((n) => !n.seen) && (
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full" />
-          )}
-        </button>
+          <h4 className="text-lg font-semibold mb-2">Notificaciones</h4>
 
-        {showNotifications && (
-          <div
-            className="absolute top-14 right-4 sm:right-10 w-[90vw] max-w-sm bg-white border border-gray-300 rounded-md shadow-md z-50 p-4"
-            ref={notificationRef}
-          >
-            <h4 className="text-lg font-semibold mb-2">Notificaciones</h4>
-            <ul className="flex flex-col gap-2 max-h-60 overflow-y-auto">
-              {notifications.length === 0 && (
-                <p className="text-gray-500 text-sm">
-                  No hay notificaciones nuevas
+          <ul className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+
+            {notifications.length === 0 && (
+              <p className="text-gray-500 text-sm">
+                No hay notificaciones nuevas
+              </p>
+            )}
+
+            {notifications.map((n, i) => (
+              <li key={i} className="border-b border-gray-200 pb-2">
+
+                <p className="text-sm font-semibold">
+                  {n.type === "alert" ? "Alerta" : "Recordatorio"}
                 </p>
-              )}
-              {notifications.map((n, i) => (
-                <li key={i} className="border-b border-gray-200 pb-2">
-                  <p className="text-sm font-semibold">
-                    {n.type === "alert" ? "Alerta" : "Recordatorio"}
-                  </p>
-                  <p className="text-sm break-words">{n.message_body}</p>
-                  <p className="text-sm text-gray-400">
-                    {formatDate(n.creation_date)}
-                  </p>
-                </li>
-              ))}
-            </ul>
-            <Link
-              to="/notificaciones"
-              onClick={() => {
-                setTimeout(() => setShowNotifications(false), 100);
-              }}
-              className="block text-center mt-4 text-sm text-red-600 hover:underline"
-            >
-              Ver todas
-            </Link>
-          </div>
-        )}
 
-        <button
-          ref={avatarRef}
-          className="flex justify-center cursor-pointer p-2 w-11 border-1 border-gray-500 rounded-full hover:bg-gray-200"
-          onClick={() => setIsMenuOpen((prev) => !prev)}
-        >
-          {initials}
-        </button>
-        {isMenuOpen && (
-          <div
-            className="absolute right-0 top-10 mt-2 w-48 bg-white rounded-md z-50 border-1 border-gray-300 p-2"
-            ref={menuRef}
+                <p className="text-sm break-words">
+                  {n.message_body}
+                </p>
+
+                <p className="text-xs text-gray-400">
+                  {formatDate(n.creation_date)}
+                </p>
+
+              </li>
+            ))}
+          </ul>
+
+          <Link
+            to="/notificaciones"
+            onClick={() => {
+              setTimeout(() => setShowNotifications(false), 100);
+            }}
+            className="block text-center mt-4 text-sm text-red-600 hover:underline"
           >
-            <div className="p-2 cursor-default">
-              <p>{employee?.name}</p>
-              <p>({employee?.role})</p>
-            </div>
-            <button
-              onClick={logout}
-              className="text-red-500 cursor-pointer w-full text-left hover:bg-gray-200 p-2 rounded-xl"
-            >
-              Cerrar sesión
-            </button>
+            Ver todas
+          </Link>
+        </div>
+      )}
+
+      {/* Avatar */}
+      <button
+        ref={avatarRef}
+        className="flex justify-center items-center cursor-pointer w-10 h-10 border border-gray-300 rounded-full hover:bg-gray-100 text-sm font-semibold"
+        onClick={() => setIsMenuOpen((prev) => !prev)}
+      >
+        {initials}
+      </button>
+
+      {/* Dropdown usuario */}
+      {isMenuOpen && (
+        <div
+          className="absolute right-0 top-12 w-48 bg-white rounded-md z-50 border border-gray-300 p-2 shadow"
+          ref={menuRef}
+        >
+
+          <div className="p-2 cursor-default border-b">
+            <p className="text-sm font-semibold">{employee?.name}</p>
+            <p className="text-xs text-gray-500">
+              {employee?.role}
+            </p>
           </div>
-        )}
-      </div>
-    </nav>
+
+          <button
+            onClick={logout}
+            className="text-red-500 cursor-pointer w-full text-left hover:bg-gray-100 p-2 rounded-md text-sm"
+          >
+            Cerrar sesión
+          </button>
+
+        </div>
+      )}
+
+    </div>
+
+  </nav>
   );
 };
 
