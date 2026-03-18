@@ -6,7 +6,7 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-gray-100 overflow-x-hidden">
+    <div className="flex min-h-screen bg-gray-100">
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 bg-black text-white flex-col">
@@ -37,7 +37,7 @@ const Layout = ({ children }) => {
         </header>
 
         {/* Main */}
-        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+        <main className="flex-1 p-4 md:p-6 overflow-x-auto overflow-y-auto">
           {children}
         </main>
 
