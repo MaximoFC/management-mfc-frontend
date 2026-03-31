@@ -80,9 +80,9 @@ export const useInventoryStore = create((set, get) => ({
       }),
     }));
   },
-  addClient: (newClient) => {
+    addClient: (newClient) => {
     set((state) => ({
-      clients: [...state.clients, { ...newClient, bikes: [] }],
+      clients: [{ ...newClient, bikes: newClient.bikes || [] }, ...state.clients],
     }));
   },
 

@@ -41,7 +41,7 @@ const Modal = ({
         {/* Cabecera */}
         {title && (
           <div className="px-8 pt-8 pb-4 border-b border-gray-100 flex-shrink-0">
-            <h2 className="text-2xl font-semibold text-gray-800 text-center">
+            <h2 className="text-xl font-semibold text-gray-800">
               {title}
             </h2>
           </div>
