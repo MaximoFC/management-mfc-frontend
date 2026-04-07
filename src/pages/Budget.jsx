@@ -384,13 +384,13 @@ const Budget = () => {
           <div className="flex flex-wrap md:flex-nowrap gap-4 items-stretch mb-4 w-full">
             <div className="flex-1 flex gap-2 min-w-[250px]">
               <button
-                className={`cursor-pointer flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${tab === "services" ? "bg-red-500 text-white" : "bg-gray-200"}`}
+                className={`cursor-pointer flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${tab === "services" ? "bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white" : "bg-gray-200"}`}
                 onClick={() => setTab("services")}
               >
                 Servicios
               </button>
               <button
-                className={`cursor-pointer flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${tab === "parts" ? "bg-red-500 text-white" : "bg-gray-200"}`}
+                className={`cursor-pointer flex-1 px-4 py-2 rounded-md text-sm sm:text-base font-semibold ${tab === "parts" ? "bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white" : "bg-gray-200"}`}
                 onClick={() => setTab("parts")}
               >
                 Repuestos
@@ -399,7 +399,7 @@ const Budget = () => {
 
             <div className="w-full md:w-auto">
               <button
-                className="cursor-pointer bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md w-full md:w-auto"
+                className="cursor-pointer bg-gradient-to-r from-[#D90429] to-[#EF233C] hover:from-[#EF233C] hover:to-[#D90429] text-white px-4 py-2 rounded-md w-full md:w-auto"
                 onClick={() => setShowAddService(true)}
               >
                 + Agregar servicio
@@ -673,14 +673,14 @@ const Budget = () => {
         {/* Botones */}
         <div className="flex gap-3 mt-6 justify-end">
           <button
-            className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded"
+            className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer"
             onClick={handleDownloadPdf}
           >
             Generar PDF
           </button>
 
           <button
-            className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded"
+            className="bg-gradient-to-r from-[#D90429] to-[#EF233C] hover:from-[#EF233C] hover:to-[#D90429] cursor-pointer text-white px-4 py-2 rounded"
             onClick={handleGenerateBudget}
           >
             Generar presupuesto

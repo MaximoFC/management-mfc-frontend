@@ -236,7 +236,7 @@ const StockList = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Inventario</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Inventario</h1>
             <p className="mt-1 text-gray-500">
               Gestiona el stock de repuestos y accesorios
             </p>
@@ -253,7 +253,7 @@ const StockList = () => {
 
             <button
               onClick={() => openModal("create")}
-              className="h-11 px-5 rounded-xl bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2 font-medium cursor-pointer"
+              className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#D90429] to-[#EF233C] hover:from-[#EF233C] hover:to-[#D90429] text-white flex items-center justify-center gap-2 font-medium cursor-pointer"
             >
               <FiPlus className="w-4 h-4" />
               Nuevo repuesto

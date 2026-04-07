@@ -64,7 +64,7 @@ const Modal = ({
           {showCancel && (
             <button
               onClick={onClose}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2 rounded-md transition"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2 rounded-md transition cursor-pointer"
             >
               {cancelText}
             </button>
@@ -76,7 +76,7 @@ const Modal = ({
               className={`${
                 disableConfirm
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-red-500 hover:bg-red-600"
+                  : "bg-gradient-to-r from-[#D90429] to-[#EF233C] cursor-pointer hover:from-[#EF233C] hover:to-[#D90429]"
               } text-white px-5 py-2 rounded-md transition`}
             >
               {confirmText}

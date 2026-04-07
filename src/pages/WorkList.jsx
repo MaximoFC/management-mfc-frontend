@@ -505,7 +505,7 @@ const WorkList = () => {
                               <div className="flex gap-2 mt-3">
                                 <button
                                   onClick={() => handlePrintTicket(budget)}
-                                  className="flex items-center justify-center gap-1 flex-1 bg-red-500 hover:bg-red-600 text-white text-xs py-1.5 rounded-lg"
+                                  className="flex items-center justify-center gap-1 flex-1 bg-gradient-to-r from-[#D90429] to-[#EF233C] hover:from-[#EF233C] hover:to-[#D90429] text-white text-xs py-1.5 rounded-lg cursor-pointer"
                                 >
                                   <FiPrinter size={14} />
                                   Ticket

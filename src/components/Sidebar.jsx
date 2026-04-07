@@ -14,7 +14,7 @@ const Sidebar = () => {
   `flex items-center gap-3 px-4 py-3 rounded-xl transition
     ${
       pathname === path
-        ? "bg-red-600 text-white"
+        ? "bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white"
         : "text-gray-300 hover:bg-gray-800"
     }`;
 

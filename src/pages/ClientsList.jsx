@@ -82,7 +82,7 @@ const ClientList = () => {
 
           <button
             onClick={() => setShowModal(true)}
-            className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg font-medium shadow-sm"
+            className="bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white px-5 py-2 rounded-lg font-medium shadow-sm cursor-pointer hover:from-[#EF233C] hover:to-[#D90429]"
           >
             + Nuevo Cliente
           </button>
