@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ClipLoader from "react-spinners/ClipLoader";
+import { FiUser, FiLock } from "react-icons/fi";
 
 const loginSchema = z.object({
     name: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
@@ -46,58 +47,112 @@ function Login() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-dvh gap-6 px-4">
-            <div className="flex flex-col items-center gap-2">
-                <img
-                    src={Logo}
-                    alt="Logo de MFC"
-                    className="h-20 w-20 rounded-full"
-                />
-                <h2 className="text-2xl md:text-3xl font-bold">MFC Admin</h2>
-                <p className="text-gray-600 text-center">Sistema de gestión de taller</p>
-            </div>
+        <div className="min-h-dvh flex items-center justify-center bg-gray-100 px-4">
+    
+            <div className="w-full max-w-sm flex flex-col items-center gap-5">
 
-            <form 
-                onSubmit={handleSubmit(onSubmit)}
-                className="w-full max-w-sm flex flex-col justify-center gap-4 border border-gray-200 shadow-md rounded-xl p-6 text-center bg-white"
-            >
-                <h2 className="text-lg md:text-xl font-bold">Iniciar sesión</h2>
-                <p className="text-gray-600 text-sm md:text-base">Ingresá tus credenciales para acceder al sistema</p>
-        
-                <input 
-                    type="text" 
-                    placeholder="Nombre"
-                    {...register("name")}
-                    className="border border-gray-200 rounded-md p-2 w-full"
-                />
-                {errors.name && <p className="text-red-500 text-sm text-left">{errors.name.message}</p>}
-        
-                <input 
-                    type="password" 
-                    placeholder="Contraseña"
-                    {...register("password")}
-                    className="border border-gray-200 rounded-md p-2 w-full"
-                />
-                {errors.password && <p className="text-red-500 text-sm text-left">{errors.password.message}</p>}
+                {/* Logo */}
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <img
+                        src={Logo}
+                        alt="Logo de MFC"
+                        className="h-16 w-16 rounded-xl shadow-md"
+                    />
+                    <h1 className="text-xl font-bold text-gray-800">
+                        MFC <span className="text-red-600">Admin</span>
+                    </h1>
+                    <p className="text-gray-500 text-sm">
+                        Sistema de gestión de taller
+                    </p>
+                </div>
 
-                <button 
-                    type="submit"
-                    disabled={loading}
-                    className={`p-2 rounded-md w-full text-white transition-colors duration-300 ${
-                        loading ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-700"
-                    }`}
+                {/* Card */}
+                <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="w-full bg-white rounded-xl shadow-md border border-gray-200 p-6 flex flex-col gap-4"
                 >
-                    {loading ? (
-                        <ClipLoader color="#d70000ff" size={22} />
-                    ) : (
-                        "Iniciar sesión"
-                    )}
-                </button>
-            </form>
+                    <div className="text-center">
+                        <h2 className="text-base font-semibold text-gray-800">
+                            Iniciar sesión
+                        </h2>
+                        <p className="text-xs text-gray-500">
+                            Ingresá tus credenciales para acceder al sistema
+                        </p>
+                    </div>
 
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                    {/* Usuario */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-600">Usuario</label>
+                        <div className="flex items-center border border-gray-200 rounded-md px-3 h-10 focus-within:ring-1 focus-within:ring-red-500">
+                            <FiUser className="text-gray-400 mr-2 text-sm" />
+                            <input
+                                type="text"
+                                placeholder="Ingresá tu usuario"
+                                {...register("name")}
+                                className="w-full outline-none bg-transparent text-sm"
+                            />
+                        </div>
+                        {errors.name && (
+                            <p className="text-red-500 text-xs">{errors.name.message}</p>
+                        )}
+                    </div>
+                    
+                    {/* Contraseña */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-600">Contraseña</label>
+                        <div className="flex items-center border border-gray-200 rounded-md px-3 h-10 focus-within:ring-1 focus-within:ring-red-500">
+                            <FiLock className="text-gray-400 mr-2 text-sm" />
+                            <input
+                                type="password"
+                                placeholder="Ingresá tu contraseña"
+                                {...register("password")}
+                                className="w-full outline-none bg-transparent text-sm"
+                            />
+                        </div>
+                        {errors.password && (
+                            <p className="text-red-500 text-xs">{errors.password.message}</p>
+                        )}
+                    </div>
+                    
+                    {/* Recuperar contraseña */}
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            className="text-xs text-red-500 hover:underline cursor-pointer"
+                        >
+                            ¿Olvidaste tu contraseña?
+                        </button>
+                    </div>
+                    
+                    {/* Botón */}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className={`w-full h-10 rounded-md text-white text-sm font-medium transition cursor-pointer ${
+                            loading
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-red-600 hover:bg-red-700"
+                        }`}
+                    >
+                        {loading ? (
+                            <ClipLoader color="#ffffff" size={18} />
+                        ) : (
+                            "Iniciar sesión"
+                        )}
+                    </button>
+                    
+                    {/* Nota */}
+                    <p className="text-[10px] text-gray-400 text-center">
+                      * La recuperación de contraseña estará disponible próximamente
+                    </p>
+                </form>
+                
+                {error && (
+                    <p className="text-red-500 text-xs text-center">{error}</p>
+                )}
+            </div>
         </div>
-    )
+    );
 }
 
 export default Login;
