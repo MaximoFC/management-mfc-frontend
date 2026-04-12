@@ -16,6 +16,11 @@ export const AuthProvider = ({ children }) => {
 
         const verifyToken = async () => {
             const storedToken = localStorage.getItem("token");
+
+            if (storedToken) {
+                api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+            }
+
             if (!storedToken) {
                 if (isMounted) setLoading(false);
                 return;

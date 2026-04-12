@@ -8,9 +8,10 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ClipLoader from "react-spinners/ClipLoader";
 import { FiUser, FiLock } from "react-icons/fi";
+import { useLocation } from "react-router-dom";
 
 const loginSchema = z.object({
-    name: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
+    email: z.string().email("Email inválido"),
     password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres")
 });
 
@@ -20,6 +21,9 @@ function Login() {
     const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
     
+    const location = useLocation();
+    const from = location.state?.from?.pathname || "/dashboard";
+
     const {
         register,
         handleSubmit,
@@ -36,9 +40,9 @@ function Login() {
         setLoading(true);
         setError('');
         try {
-            const res = await loginEmployee(data.name, data.password);
+            const res = await loginEmployee(data.email, data.password);
             login(res.employee, res.token);
-            navigate("/dashboard");
+            navigate(from, { replace: true });
         } catch (error) {
             setError(error.message || 'Error al iniciar sesión');
         } finally {
@@ -82,18 +86,18 @@ function Login() {
 
                     {/* Usuario */}
                     <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600">Usuario</label>
+                        <label className="text-xs text-gray-600">Correo electrónico</label>
                         <div className="flex items-center border border-gray-200 rounded-md px-3 h-10 focus-within:ring-1 focus-within:ring-red-500">
                             <FiUser className="text-gray-400 mr-2 text-sm" />
                             <input
-                                type="text"
-                                placeholder="Ingresá tu usuario"
-                                {...register("name")}
+                                type="email"
+                                placeholder="Ingresá tu correo electrónico"
+                                {...register("email")}
                                 className="w-full outline-none bg-transparent text-sm"
                             />
                         </div>
-                        {errors.name && (
-                            <p className="text-red-500 text-xs">{errors.name.message}</p>
+                        {errors.email && (
+                            <p className="text-red-500 text-xs">{errors.email.message}</p>
                         )}
                     </div>
                     
@@ -118,6 +122,7 @@ function Login() {
                     <div className="text-center">
                         <button
                             type="button"
+                            onClick={() => navigate("/forgot-password")}
                             className="text-xs text-red-500 hover:underline cursor-pointer"
                         >
                             ¿Olvidaste tu contraseña?

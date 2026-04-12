@@ -17,13 +17,45 @@ import NewClient from "./pages/NewClient";
 import ClientDetail from "./pages/ClientDetail";
 import BudgetDetail from "./pages/BudgetDetail";
 import Warranties from "./pages/Warranties";
+import RegisterPage from "./pages/RegisterPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import PublicRoute from "./components/PublicRoute";
+import ForgotPasswordPage from "./pages/ForgotPassword";
 
 function App() {
   return (
     <Routes>
 
       <Route path="/" element={<HomeRedirect />} />
-      <Route path="/login" element={<Login />} />
+      
+      <Route 
+        path="/login" 
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } 
+      />
+
+      <Route 
+        path="/register" 
+        element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        } 
+      />
+
+      <Route 
+        path="/reset-password" 
+        element={
+          <PublicRoute>
+            <ResetPasswordPage />
+          </PublicRoute>
+        } 
+      />
+
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       <Route
         path="/"

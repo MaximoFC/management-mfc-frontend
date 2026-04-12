@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { fetchDashboardData } from "../services/dashboardService";
 import ClipLoader from "react-spinners/ClipLoader";
 import { FiAlertTriangle } from "react-icons/fi";
+import InviteUserCard from "../components/InviteUserCard";
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -252,6 +253,9 @@ const SideActions = ({ pendientes }) => (
           );
         })
       )}
+    </div>
+    <div className="flex flex-col gap-3">
+      <InviteUserCard />
     </div>
   </div>
 );
