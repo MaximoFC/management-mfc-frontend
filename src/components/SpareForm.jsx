@@ -127,10 +127,10 @@ const SpareForm = ({
         <>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
-              <label>Cantidad a agregar *</label>
+              <label className="text-sm font-semibold text-gray-800">Cantidad a agregar *</label>
               <input
                 type="number"
-                className="border border-gray-300 rounded-md p-2"
+                className="h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
                 {...register("stock", { valueAsNumber: true })}
               />
               {errors.stock && (
@@ -139,10 +139,10 @@ const SpareForm = ({
             </div>
 
             <div>
-              <label>Costo unitario (ARS) *</label>
+              <label className="text-sm font-semibold text-gray-800">Costo unitario (ARS) *</label>
               <input
                 type="number"
-                className="border border-gray-300 rounded-md p-2"
+                className="h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
                 {...register("price", { valueAsNumber: true })}
               />
               {errors.price && (
@@ -157,41 +157,45 @@ const SpareForm = ({
       {mode !== "stock" && (
         <div className="flex flex-col gap-5">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Tipo */}
-            <div className="flex flex-col">
-              <label>Tipo de repuesto *</label>
-              <select
-                className="border border-gray-300 rounded-md p-2"
-                {...register("type")}
-                disabled={mode !== "create"}
-              >
-                <option value="">Seleccionar repuesto</option>
-                {SPARE_TYPES.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              {errors.type && (
-                <p className="text-red-500 text-sm">{errors.type.message}</p>
-              )}
+          <div className="space-y-6">
+            {/* Primer bloque */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Tipo */}
+              <div className="flex flex-col">
+                <label className="text-sm font-semibold text-gray-800">Tipo de repuesto *</label>
+                <select
+                  className="border border-gray-300 rounded-md p-2"
+                  {...register("type")}
+                  disabled={mode !== "create"}
+                >
+                  <option value="">Seleccionar repuesto</option>
+                  {SPARE_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                {errors.type && (
+                  <p className="text-red-500 text-sm">{errors.type.message}</p>
+                )}
+              </div>
+              {/* Código */}
+              <div className="flex flex-col">
+                <label className="text-sm font-semibold text-gray-800">Código *</label>
+                <input
+                  className="h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
+                  {...register("code")}
+                  disabled={mode !== "create"}
+                />
+                {errors.code && (
+                  <p className="text-red-500 text-sm">{errors.code.message}</p>
+                )}
+              </div>
             </div>
-            {/* Código */}
-            <div className="flex flex-col">
-              <label>Código *</label>
-              <input
-                className="border border-gray-300 rounded-md p-2"
-                {...register("code")}
-                disabled={mode !== "create"}
-              />
-              {errors.code && (
-                <p className="text-red-500 text-sm">{errors.code.message}</p>
-              )}
-            </div>
+            
             {/* Marca */}
-            <div className="flex flex-col">
-              <label>Marca *</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold text-gray-800">Marca *</label>
               <input
-                className="border border-gray-300 rounded-md p-2"
+                className="h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
                 {...register("brand")}
                 disabled={mode === "stock"}
               />
@@ -199,28 +203,72 @@ const SpareForm = ({
                 <p className="text-red-500 text-sm">{errors.brand.message}</p>
               )}
             </div>
+            
+            {/* Descripción */}
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-800">Descripción *</label>
+              <textarea
+                rows={3}
+                className="h-24 border border-gray-300 rounded-md p-2 text-gray-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
+                {...register("description")}
+                disabled={mode === "stock"}
+              />
+              {errors.description && (
+                <p className="text-red-500 text-sm">
+                  {errors.description.message}
+                </p>
+              )}
+            </div>
+
+            {/* Stock */}
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-800">
+                Stock *
+              </label>
+              <input
+                type="number"
+                className="h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
+                {...register("stock", { valueAsNumber: true })}
+              />
+              {errors.stock && (
+                <p className="text-red-500 text-sm">{errors.stock.message}</p>
+              )}
+            </div>
+
             {/* Moneda */}
             <div className="flex flex-col">
               <label>Moneda *</label>
-              <select
-                className="border border-gray-300 rounded-md p-2"
-                {...register("pricing_currency")}
-                disabled={mode !== "create"}
-              >
-                <option value="ARS">ARS</option>
-                <option value="USD">USD</option>
-              </select>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="ARS"
+                    {...register("pricing_currency")}
+                  />
+                  Pesos (ARS)
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="USD"
+                    {...register("pricing_currency")}
+                  />
+                  Dólares (USD)
+                </label>
+              </div>
             </div>
+
             {/* Precio */}
             <div className="flex flex-col">
-              <label>
+              <label className="text-sm font-semibold text-gray-800">
                 {currency === "USD"
                   ? "Precio USD *"
                   : "Costo unitario (ARS) *"}
               </label>
               <input
                 type="number"
-                className="border border-gray-300 rounded-md p-2"
+                className="h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
                 {...register("price", { valueAsNumber: true })}
                 disabled={mode === "stock"}
               />
@@ -228,25 +276,16 @@ const SpareForm = ({
                 <p className="text-red-500 text-sm">{errors.price.message}</p>
               )}
             </div>
-            {/* Stock */}
-            <div className="flex flex-col">
-              <label>Stock *</label>
-              <input
-                type="number"
-                className="border border-gray-300 rounded-md p-2"
-                {...register("stock", { valueAsNumber: true })}
-              />
-              {errors.stock && (
-                <p className="text-red-500 text-sm">{errors.stock.message}</p>
-              )}
-            </div>
+            
             {/* Markup */}
             {currency === "ARS" && mode !== "stock" && (
               <div className="flex flex-col">
-                <label>Markup (%)</label>
+                <label className="text-sm font-semibold text-gray-800">
+                  Markup (%)
+                </label>
                 <input
                   type="number"
-                  className="border border-gray-300 rounded-md p-2"
+                  className="h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
                   {...register("markup_percent", { valueAsNumber: true })}
                 />
               </div>
@@ -254,27 +293,14 @@ const SpareForm = ({
           </div>
           {/* Precio final */}
           {currency === "ARS" && mode !== "stock" && (
-            <div className="bg-gray-100 rounded-md p-3 text-sm">
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4">
               Precio de venta estimado:{" "}
               <strong className="text-gray-800">
                 ${finalPrice}
               </strong>
             </div>
           )}
-          {/* Descripción */}
-          <div className="flex flex-col">
-            <label>Descripción *</label>
-            <textarea
-              className="border border-gray-300 rounded-md p-2"
-              {...register("description")}
-              disabled={mode === "stock"}
-            />
-            {errors.description && (
-              <p className="text-red-500 text-sm">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
+          
         </div>
       )}
     </form>

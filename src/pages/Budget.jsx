@@ -351,8 +351,8 @@ const Budget = () => {
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-6">
-        <div className="flex flex-col gap-6 bg-white border border-gray-200 rounded-md p-4 md:p-6">
+      <div className="max-w-5xl mx-auto flex flex-col gap-6">
+        <div className="flex flex-col gap-6 rounded-md">
           <div className="flex gap-4">
             <Select
               options={clientOptions}
