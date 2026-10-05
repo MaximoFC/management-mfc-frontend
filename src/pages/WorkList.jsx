@@ -287,13 +287,13 @@ const WorkList = () => {
           name: `${budget.bike_id?.current_owner_id?.name || ""} ${
             budget.bike_id?.current_owner_id?.surname || ""
           }`,
-          dni: budget.bike_id?.current_owner_id?.dni || "-",
           mobileNum: budget.bike_id?.current_owner_id?.mobileNum?.trim() || "-",
         },
         bike: {
           brand: budget.bike_id?.brand || "-",
           model: budget.bike_id?.model || "-",
-          frameNumber: budget.bike_id?.frameNumber || "-",
+          color: budget.bike_id?.color || "-",
+          serialNumber: budget.bike_id?.serialNumber || "-",
         },
         date: new Date().toLocaleDateString("es-AR"),
       };
