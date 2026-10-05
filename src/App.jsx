@@ -1,96 +1,67 @@
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Routes, Route, Outlet } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
-import InventoryBootstrapper from "./components/InventoryBootstrapper";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import StockList from "./pages/StockList";
-import StockEntryForm from "./pages/StockEntryForm";
-import EditSpare from "./pages/EditSpare";
-import ReplenishStock from "./pages/ReplenishStock";
-import Cash from "./pages/Cash";
-import Budget from "./pages/Budget";
-import WorkList from "./pages/WorkList";
-import ClientList from "./pages/ClientsList";
-import HomeRedirect from "./components/HomeRedirect";
-import Notifications from "./pages/Notifications";
-import NewClient from "./pages/NewClient";
-import ClientDetail from "./pages/ClientDetail";
-import BudgetDetail from "./pages/BudgetDetail";
-import Warranties from "./pages/Warranties";
-import RegisterPage from "./pages/RegisterPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PublicRoute from "./components/PublicRoute";
-import ForgotPasswordPage from "./pages/ForgotPassword";
+import HomeRedirect from "./components/HomeRedirect";
+import { LoadingDots } from "./components/ui-primitives";
+
+// Cada página se descarga recién cuando se abre: el bundle inicial queda mucho más chico
+const Login = lazy(() => import("./pages/Login"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPassword"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const StockList = lazy(() => import("./pages/StockList"));
+const Cash = lazy(() => import("./pages/Cash"));
+const Budget = lazy(() => import("./pages/Budget"));
+const WorkList = lazy(() => import("./pages/WorkList"));
+const ClientList = lazy(() => import("./pages/ClientsList"));
+const ClientDetail = lazy(() => import("./pages/ClientDetail"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Warranties = lazy(() => import("./pages/Warranties"));
+const BudgetDetail = lazy(() => import("./pages/BudgetDetail"));
+
+const PageLoader = () => (
+  <div className="flex h-dvh items-center justify-center text-[#D90429]">
+    <LoadingDots />
+  </div>
+);
 
 function App() {
   return (
-    <Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<HomeRedirect />} />
 
-      <Route path="/" element={<HomeRedirect />} />
-      
-      <Route 
-        path="/login" 
-        element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        } 
-      />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+        <Route path="/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
 
-      <Route 
-        path="/register" 
-        element={
-          <PublicRoute>
-            <RegisterPage />
-          </PublicRoute>
-        } 
-      />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Outlet />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="repuestos" element={<StockList />} />
+          <Route path="caja" element={<ProtectedRoute adminOnly><Cash /></ProtectedRoute>} />
+          <Route path="presupuestos" element={<Budget />} />
+          <Route path="trabajos" element={<WorkList />} />
+          <Route path="clientes" element={<ClientList />} />
+          <Route path="clientes/:id" element={<ClientDetail />} />
+          <Route path="notificaciones" element={<Notifications />} />
+          <Route path="garantias" element={<Warranties />} />
+          <Route path="garantias/:id" element={<BudgetDetail />} />
+        </Route>
 
-      <Route 
-        path="/reset-password" 
-        element={
-          <PublicRoute>
-            <ResetPasswordPage />
-          </PublicRoute>
-        } 
-      />
-
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <ProtectedLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="repuestos" element={<StockList />} />
-        <Route path="repuestos/nuevo" element={<StockEntryForm />} />
-        <Route path="repuestos/editar/:id" element={<EditSpare />} />
-        <Route path="repuestos/reponer/:id" element={<ReplenishStock />} />
-        <Route path="caja" element={<Cash />} />
-        <Route path="presupuestos" element={<Budget />} />
-        <Route path="trabajos" element={<WorkList />} />
-        <Route path="clientes" element={<ClientList />} />
-        <Route path="clientes/nuevo" element={<NewClient />} />
-        <Route path="clientes/:id" element={<ClientDetail />} />
-        <Route path="notificaciones" element={<Notifications />} />
-        <Route path="garantias" element={<Warranties />} />
-        <Route path="garantias/:id" element={<BudgetDetail />} />
-      </Route>
-
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
-  );
-}
-
-function ProtectedLayout() {
-  return (
-    <InventoryBootstrapper>
-      <Outlet />
-    </InventoryBootstrapper>
+        {/* Rutas inexistentes: al dashboard si hay sesión, si no al login */}
+        <Route path="*" element={<HomeRedirect />} />
+      </Routes>
+    </Suspense>
   );
 }
 

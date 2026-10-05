@@ -13,7 +13,7 @@ function NewClient({ showModal, onClose }) {
   const [mobileNum, setMobileNum] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [bikes, setBikes] = useState([{ brand: "", model: "", color: "" }]);
+  const [bikes, setBikes] = useState([{ brand: "", model: "", color: "", serialNumber: "" }]);
 
   const addClientToStore = useInventoryStore((state) => state.addClient);
 
@@ -21,12 +21,13 @@ function NewClient({ showModal, onClose }) {
     setName("");
     setSurname("");
     setMobileNum("");
-    setBikes([{ brand: "", model: "", color: "" }]);
+    setBikes([{ brand: "", model: "", color: "", serialNumber: "" }]);
     setError("");
     setLoading(false);
   };
 
   const handleSubmit = async () => {
+    if (loading) return;
     setError("");
     setLoading(true);
 
@@ -47,6 +48,7 @@ function NewClient({ showModal, onClose }) {
             brand: bike.brand,
             model: bike.model,
             color: bike.color,
+            serialNumber: bike.serialNumber,
             current_owner_id: newClient._id,
           })
         )
@@ -78,7 +80,7 @@ function NewClient({ showModal, onClose }) {
   };
 
   const addBike = () => {
-    setBikes([...bikes, { brand: "", model: "", color: "" }]);
+    setBikes([...bikes, { brand: "", model: "", color: "", serialNumber: "" }]);
   };
 
   const removeBike = (index) => {
@@ -98,9 +100,10 @@ function NewClient({ showModal, onClose }) {
       title="Agregar nuevo cliente"
       onClose={handleClose}
       onConfirm={handleSubmit}
-      confirmText={loading ? "Guardando..." : "Agregar cliente"}
+      confirmText="Agregar cliente"
+      loading={loading}
       cancelText="Cancelar"
-      disableConfirm={loading || !name || !surname || !mobileNum}
+      disableConfirm={!name || !surname || !mobileNum}
     >
       <div className="flex flex-col gap-6">
 
@@ -188,6 +191,15 @@ function NewClient({ showModal, onClose }) {
                     value={bike.color}
                     onChange={(e) =>
                       updateBike(index, "color", e.target.value)
+                    }
+                  />
+
+                  <input
+                    placeholder="N° de serie (opcional)"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                    value={bike.serialNumber}
+                    onChange={(e) =>
+                      updateBike(index, "serialNumber", e.target.value)
                     }
                   />
                 </div>

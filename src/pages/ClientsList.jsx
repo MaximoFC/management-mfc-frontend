@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
-import { useSearch } from "../context/SearchContext";
+import { useGlobalSearch } from "../context/SearchContext";
 import NewClient from "./NewClient";
 import { useInventoryStore } from "../store/useInventoryStore";
 import {
@@ -12,8 +12,7 @@ import {
 import { FaBicycle } from "react-icons/fa";
 
 const ClientList = () => {
-  const { searchTerm, setSearchPlaceholder, setOnSearch, setSearchTerm } =
-    useSearch();
+  const searchTerm = useGlobalSearch("Buscar cliente por nombre o teléfono");
   const { clients, fetchBootstrap, loadingBootstrap } = useInventoryStore();
   const [filteredClients, setFilteredClients] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,32 +24,18 @@ const ClientList = () => {
   // --- Inicializar bootstrap ---
   useEffect(() => {
     fetchBootstrap();
-  }, []);
+  }, [fetchBootstrap]);
 
   // --- Filtrado según searchTerm ---
   useEffect(() => {
     const term = searchTerm.toLowerCase();
     const filtered = clients.filter((c) =>
-      `${c.name} ${c.surname}`.toLowerCase().includes(term)
+      `${c.name} ${c.surname} ${c.mobileNum || ""}`.toLowerCase().includes(term)
     );
     setFilteredClients(filtered);
     setCurrentPage(1);
   }, [clients, searchTerm]);
 
-  // --- Configuración de search context ---
-  useEffect(() => {
-    setSearchPlaceholder("Buscar cliente por nombre");
-
-    setOnSearch(() => (term) => {
-      setSearchTerm(term);
-    });
-
-    return () => {
-      setSearchPlaceholder("Buscar cliente, trabajo o repuesto");
-      setOnSearch(null);
-      setSearchTerm("");
-    };
-  }, []);
 
   // --- Cálculos estadísticos ---
   const totalBikes = clients.reduce((sum, c) => sum + c.bikes.length, 0);

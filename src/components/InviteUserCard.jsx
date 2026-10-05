@@ -1,3 +1,4 @@
+import { LoadingDots } from "./ui-primitives";
 import { useState } from "react";
 import { createInvitation } from "../services/authService";
 
@@ -63,9 +64,9 @@ const InviteUserCard = () => {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white rounded-lg py-2 text-sm hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white rounded-lg py-2 text-sm transition disabled:opacity-80 cursor-pointer disabled:cursor-wait"
                 >
-                    {loading ? "Enviando..." : "Enviar invitación"}
+                    {loading ? <LoadingDots /> : "Enviar invitación"}
                 </button>
             </form>
 

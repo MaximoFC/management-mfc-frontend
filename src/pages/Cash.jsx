@@ -1,372 +1,414 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import Layout from "../components/Layout";
-import { TfiStatsUp, TfiStatsDown } from "react-icons/tfi";
-import {
-  IoArrowUpCircleOutline,
-  IoArrowDownCircleOutline,
-} from "react-icons/io5";
-import { useEffect, useState } from "react";
-import {
-  getBalance,
-  getFlows,
-  createFlow,
-  getFlowSummary,
-} from "../services/cashService";
 import Modal from "../components/Modal";
+import ClipLoader from "react-spinners/ClipLoader";
 import { toast } from "react-toastify";
-import { useAuth } from "../context/AuthContext";
+import { getBalance, getFlows, createFlow, getFlowSummary } from "../services/cashService";
+import { isoDateAR, daysAgoISO } from "../utils/dates";
+import { LoadingDots } from "../components/ui-primitives";
+import { TfiStatsUp, TfiStatsDown } from "react-icons/tfi";
+import { FiPlus, FiArrowUpRight, FiArrowDownLeft, FiSearch } from "react-icons/fi";
 
-const Cash = () => {
-  const [cash, setCash] = useState({ balance: 0 });
-  const [flow, setFlow] = useState([]);
-  const [type, setType] = useState("");
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const { loading, isAuthenticated } = useAuth();
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+const PAGE_SIZE = 10;
+const DEFAULT_RANGE_DAYS = 30;
 
-  const [summary, setSummary] = useState({
-    today: { ingresos: 0, egresos: 0, balance: 0 },
-    week: { ingresos: 0, egresos: 0, balance: 0 },
-    month: { ingresos: 0, egresos: 0, balance: 0 },
+const EMPTY_TOTALS = { ingresos: 0, egresos: 0, balance: 0 };
+
+// Atajos de rango. Nunca se piden todos los movimientos: siempre hay un rango y paginado.
+const QUICK_RANGES = [
+  { label: "Hoy", range: () => [isoDateAR(), isoDateAR()] },
+  { label: "7 días", range: () => [daysAgoISO(6), isoDateAR()] },
+  { label: "30 días", range: () => [daysAgoISO(DEFAULT_RANGE_DAYS - 1), isoDateAR()] },
+  { label: "Este mes", range: () => [`${isoDateAR().slice(0, 8)}01`, isoDateAR()] },
+  { label: "3 meses", range: () => [daysAgoISO(89), isoDateAR()] },
+];
+
+const formatCurrency = (value) =>
+  Number(value || 0).toLocaleString("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0 });
+
+const formatDateTime = (value) =>
+  new Date(value).toLocaleString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
+const inputClasses =
+  "h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-gray-200";
+
+const SummaryCard = ({ title, data }) => (
+  <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <h3 className="mb-4 text-sm font-medium text-gray-500">{title}</h3>
+    <div className="space-y-3 text-sm">
+      <div className="flex justify-between">
+        <span className="text-gray-600">Ingresos</span>
+        <span className="font-semibold text-emerald-600">+ {formatCurrency(data.ingresos)}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-gray-600">Egresos</span>
+        <span className="font-semibold text-red-500">- {formatCurrency(data.egresos)}</span>
+      </div>
+      <div className="flex justify-between border-t border-gray-100 pt-3">
+        <span className="font-medium text-gray-700">Balance</span>
+        <span className="font-bold text-gray-900">{formatCurrency(data.balance)}</span>
+      </div>
+    </div>
+  </div>
+);
+
+const Cash = () => {
+  const [balance, setBalance] = useState(0);
+  const [summary, setSummary] = useState({ today: EMPTY_TOTALS, week: EMPTY_TOTALS, month: EMPTY_TOTALS });
+
+  // Por defecto se muestran los últimos 30 días
+  const [startDate, setStartDate] = useState(() => daysAgoISO(DEFAULT_RANGE_DAYS - 1));
+  const [endDate, setEndDate] = useState(() => isoDateAR());
+  const [activeQuick, setActiveQuick] = useState("30 días");
+
+  const [flows, setFlows] = useState({ items: [], total: 0, page: 1, pages: 1, totals: EMPTY_TOTALS });
+  // Rango realmente aplicado (la paginación usa este, no lo que esté escrito en los inputs)
+  const [appliedRange, setAppliedRange] = useState(() => [daysAgoISO(DEFAULT_RANGE_DAYS - 1), isoDateAR()]);
+  const requestId = useRef(0);
+  const [loadingFlows, setLoadingFlows] = useState(true);
+
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ type: "", amount: "", description: "" });
+  const [saving, setSaving] = useState(false);
+
+  const loadOverview = useCallback(async () => {
+    try {
+      const [cash, summaryData] = await Promise.all([getBalance(), getFlowSummary()]);
+      setBalance(cash.balance);
+      setSummary(summaryData);
+    } catch {
+      toast.error("Error cargando el saldo de la caja");
+    }
+  }, []);
+
+  const loadFlows = useCallback(async (start, end, page = 1) => {
+    // Si se pide otro rango antes de que llegue la respuesta anterior, la vieja se descarta
+    const id = ++requestId.current;
+    setAppliedRange([start, end]);
+    setLoadingFlows(true);
+    try {
+      const data = await getFlows({ start, end, page, limit: PAGE_SIZE });
+      if (id === requestId.current) setFlows({ ...data, totals: data.totals || EMPTY_TOTALS });
+    } catch {
+      if (id === requestId.current) toast.error("Error cargando los movimientos");
+    } finally {
+      if (id === requestId.current) setLoadingFlows(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (loading || !isAuthenticated) return;
+    loadOverview();
+    loadFlows(daysAgoISO(DEFAULT_RANGE_DAYS - 1), isoDateAR());
+  }, [loadOverview, loadFlows]);
 
-    const fetchData = async () => {
-      try {
-        setCash(await getBalance());
-        setSummary(await getFlowSummary());
-      } catch (error) {
-        toast.error("Error cargando datos");
-      }
-    };
+  const applyQuickRange = (quick) => {
+    const [start, end] = quick.range();
+    setStartDate(start);
+    setEndDate(end);
+    setActiveQuick(quick.label);
+    loadFlows(start, end);
+  };
 
-    fetchData();
-  }, [loading, isAuthenticated]);
+  const handleSearch = () => {
+    if (!startDate || !endDate) {
+      toast.warning("Elegí fecha desde y hasta");
+      return;
+    }
+    if (startDate > endDate) {
+      toast.warning("La fecha desde no puede ser posterior a la fecha hasta");
+      return;
+    }
+    setActiveQuick(null);
+    loadFlows(startDate, endDate);
+  };
 
   const handleAddManualFlow = async () => {
+    if (saving) return;
+    if (!(Number(form.amount) > 0)) {
+      toast.warning("El monto debe ser mayor a 0");
+      return;
+    }
+    setSaving(true);
     try {
-      await createFlow({
-        type,
-        amount: Number(amount),
-        description,
-      });
-
-      setCash(await getBalance());
-      setSummary(await getFlowSummary());
-
-      setType("");
-      setAmount("");
-      setDescription("");
-      setShowModal(false);
-
+      await createFlow({ type: form.type, amount: Number(form.amount), description: form.description.trim() });
       toast.success("Movimiento registrado");
-    } catch (error) {
-      toast.error("Error al registrar movimiento");
+      setForm({ type: "", amount: "", description: "" });
+      setShowModal(false);
+      await Promise.all([loadOverview(), loadFlows(appliedRange[0], appliedRange[1], 1)]);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Error al registrar movimiento");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleApplyDateFilter = async (page = 1) => {
-    try {
-      const params = { page, limit: 10 };
-      if (startDate) params.start = startDate;
-      if (endDate) params.end = endDate;
-
-      const res = await getFlows(params);
-
-      setFlow(res.items);
-      setTotalPages(res.pages);
-      setTotalItems(res.total);
-      setCurrentPage(page);
-    } catch (error) {
-      toast.error("Error filtrando movimientos");
-    }
-  };
-
-  const formatCurrency = (value) =>
-    value.toLocaleString("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-    });
+  const firstItem = flows.total === 0 ? 0 : (flows.page - 1) * PAGE_SIZE + 1;
+  const lastItem = (flows.page - 1) * PAGE_SIZE + flows.items.length;
 
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-
-        {/* HEADER */}
-        <div className="flex justify-between items-center">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Caja</h1>
-            <p className="text-gray-500">Control de ingresos y egresos</p>
+            <h1 className="text-2xl font-bold text-gray-900">Caja</h1>
+            <p className="mt-1 text-gray-500">Control de ingresos y egresos</p>
           </div>
-
           <button
             onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white px-4 py-2 rounded-md cursor-pointer"
+            className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#D90429] to-[#EF233C] px-5 font-medium text-white hover:from-[#EF233C] hover:to-[#D90429]"
           >
-            + Agregar movimiento
+            <FiPlus className="h-4 w-4" />
+            Agregar movimiento
           </button>
         </div>
 
-        {/* BALANCE */}
-        <div className="bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white rounded-xl shadow-lg px-6 py-10">
+        {/* Saldo */}
+        <div className="rounded-2xl bg-gradient-to-r from-[#D90429] to-[#EF233C] px-6 py-8 text-white shadow-sm">
           <p className="text-sm opacity-90">Dinero actual en caja</p>
-
-          <h2 className="text-4xl font-bold mt-2">
-            {formatCurrency(cash.balance)}
-          </h2>
-
-          <div className="flex gap-6 mt-4">
-            <p className="flex items-center gap-2 text-sm">
-              <TfiStatsUp /> + {formatCurrency(summary.today.ingresos)}
+          <h2 className="mt-2 text-4xl font-bold">{formatCurrency(balance)}</h2>
+          <div className="mt-4 flex flex-wrap gap-6 text-sm">
+            <p className="flex items-center gap-2">
+              <TfiStatsUp /> Hoy + {formatCurrency(summary.today.ingresos)}
             </p>
-            <p className="flex items-center gap-2 text-sm">
-              <TfiStatsDown /> - {formatCurrency(summary.today.egresos)}
+            <p className="flex items-center gap-2">
+              <TfiStatsDown /> Hoy - {formatCurrency(summary.today.egresos)}
             </p>
           </div>
         </div>
 
-        {/* SUMMARY */}
-        <div className="grid sm:grid-cols-3 gap-4">
-          {["today", "week", "month"].map((key, i) => {
-            const titles = ["Hoy", "Esta semana", "Este mes"];
-            const data = summary[key];
-          
-            return (
-              <div
-                key={i}
-                className="bg-gray-50 rounded-2xl border border-gray-300 p-5 shadow-sm"
-              >
-                <h3 className="text-sm text-gray-600 mb-4">{titles[i]}</h3>
-            
-                <div className="space-y-4 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Ingresos</span>
-                    <span className="text-emerald-600 font-semibold">
-                      + {formatCurrency(data.ingresos)}
-                    </span>
-                  </div>
-            
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Egresos</span>
-                    <span className="text-red-500 font-semibold">
-                      - {formatCurrency(data.egresos)}
-                    </span>
-                  </div>
-            
-                  <div className="border-t border-gray-300 pt-2 mt-2 flex justify-between">
-                    <span className="font-medium text-gray-700">Balance</span>
-                    <span className="font-bold text-gray-900">
-                      {formatCurrency(data.balance)}
-                    </span>
-                  </div>
-                </div>
+        {/* Resumen */}
+        <div className="grid gap-5 sm:grid-cols-3">
+          <SummaryCard title="Hoy" data={summary.today} />
+          <SummaryCard title="Esta semana" data={summary.week} />
+          <SummaryCard title="Este mes" data={summary.month} />
+        </div>
+
+        {/* Historial */}
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-gray-100 p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Historial de movimientos</h2>
+              <div className="flex flex-wrap gap-2">
+                {QUICK_RANGES.map((quick) => (
+                  <button
+                    key={quick.label}
+                    type="button"
+                    onClick={() => applyQuickRange(quick)}
+                    className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                      activeQuick === quick.label
+                        ? "bg-gray-900 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {quick.label}
+                  </button>
+                ))}
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* FILTERS */}
-        <div className="bg-gray-50 border border-gray-300 rounded-2xl p-5 flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex flex-col w-full">
-            <label className="text-sm text-gray-600 mb-1">Desde</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border border-gray-300 rounded-lg p-2"
-            />
-          </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="w-full">
+                <label htmlFor="cash-from" className="mb-1 block text-sm font-medium text-gray-700">
+                  Desde
+                </label>
+                <input
+                  id="cash-from"
+                  type="date"
+                  value={startDate}
+                  max={endDate || undefined}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className={inputClasses}
+                />
+              </div>
+              <div className="w-full">
+                <label htmlFor="cash-to" className="mb-1 block text-sm font-medium text-gray-700">
+                  Hasta
+                </label>
+                <input
+                  id="cash-to"
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  max={isoDateAR()}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className={inputClasses}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSearch}
+                disabled={loadingFlows}
+                className="flex h-11 min-w-[110px] shrink-0 disabled:cursor-wait disabled:opacity-70 cursor-pointer items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {loadingFlows ? <LoadingDots /> : <><FiSearch className="h-4 w-4" /> Buscar</>}
+              </button>
+            </div>
 
-          <div className="flex flex-col w-full">
-            <label className="text-sm text-gray-600 mb-1">Hasta</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border border-gray-300 rounded-lg p-2"
-            />
-          </div>
-
-          <button
-            onClick={() => handleApplyDateFilter(1)}
-            className="bg-gradient-to-r from-[#D90429] to-[#EF233C] hover:bg-red-600 text-white px-5 py-2 rounded-xl font-medium cursor-pointer"
-          >
-            Filtrar
-          </button>
-        </div>
-
-        {/* HISTORIAL */}
-        <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-300">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold">
-              Historial de movimientos
-            </h2>
+            {/* Totales del rango */}
+            <div className="grid grid-cols-3 gap-3 rounded-xl bg-gray-50 p-4 text-sm">
+              <div>
+                <p className="text-gray-500">Ingresos del período</p>
+                <p className="font-semibold text-emerald-600">+ {formatCurrency(flows.totals.ingresos)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Egresos del período</p>
+                <p className="font-semibold text-red-500">- {formatCurrency(flows.totals.egresos)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Balance del período</p>
+                <p className="font-bold text-gray-900">{formatCurrency(flows.totals.balance)}</p>
+              </div>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 text-gray-500 text-xs uppercase border-b border-gray-300">
-                <tr>
-                  <th className="px-6 py-3 text-left">Tipo</th>
-                  <th className="px-6 py-3 text-left">Monto</th>
-                  <th className="px-6 py-3 text-left">Descripción</th>
-                  <th className="px-6 py-3 text-left">Fecha</th>
+            <table className="w-full min-w-[640px]">
+              <thead className="border-b border-gray-200">
+                <tr className="text-left text-sm font-semibold text-gray-700">
+                  <th className="px-5 py-4">Tipo</th>
+                  <th className="px-5 py-4">Descripción</th>
+                  <th className="px-5 py-4">Fecha</th>
+                  <th className="px-5 py-4 text-right">Monto</th>
                 </tr>
               </thead>
-
               <tbody>
-                {flow.map((mov, idx) => (
-                  <tr key={idx} className="border-b border-gray-300 last:border-0">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-9 h-9 flex items-center justify-center rounded-full ${
-                            mov.type === "ingreso"
-                              ? "bg-emerald-100 text-emerald-600"
-                              : "bg-red-100 text-red-500"
-                          }`}
-                        >
-                          {mov.type === "ingreso" ? (
-                            <IoArrowUpCircleOutline />
-                          ) : (
-                            <IoArrowDownCircleOutline />
-                          )}
-                        </div>
-                        
-                        <span
-                          className={`text-xs font-medium px-2 py-1 rounded-full ${
-                            mov.type === "ingreso"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-red-100 text-red-600"
-                          }`}
-                        >
-                          {mov.type === "ingreso" ? "Ingreso" : "Egreso"}
-                        </span>
-                      </div>
-                    </td>
-                        
-                    <td className="px-6 py-4 font-semibold">
-                      <span
-                        className={
-                          mov.type === "ingreso"
-                            ? "text-emerald-600"
-                            : "text-red-500"
-                        }
-                      >
-                        {mov.type === "ingreso" ? "+" : "-"}{" "}
-                        {formatCurrency(mov.amount)}
-                      </span>
-                    </td>
-                      
-                    <td className="px-6 py-4 text-gray-800">
-                      {mov.description}
-                    </td>
-                      
-                    <td className="px-6 py-4 text-gray-500 text-sm">
-                      {new Date(mov.date).toLocaleString("es-AR", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                {loadingFlows && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center">
+                      <ClipLoader size={28} color="#D90429" />
                     </td>
                   </tr>
-                ))}
+                )}
+
+                {!loadingFlows &&
+                  flows.items.map((mov) => {
+                    const isIncome = mov.type === "ingreso";
+                    return (
+                      <tr key={mov._id} className="border-b border-gray-100 text-sm last:border-b-0">
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                              isIncome ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"
+                            }`}
+                          >
+                            {isIncome ? <FiArrowUpRight /> : <FiArrowDownLeft />}
+                            {isIncome ? "Ingreso" : "Egreso"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-gray-800">{mov.description}</td>
+                        <td className="px-5 py-4 text-gray-500">{formatDateTime(mov.date)}</td>
+                        <td className={`px-5 py-4 text-right font-semibold ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
+                          {isIncome ? "+" : "-"} {formatCurrency(mov.amount)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                {!loadingFlows && flows.items.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                      No hay movimientos en este período.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
 
-          {/* PAGINACIÓN */}
-          {flow.length > 0 && (
-            <div className="flex flex-col gap-3 px-6 py-5 border-t border-gray-200 bg-white sm:flex-row sm:items-center sm:justify-between">
+          {flows.total > 0 && (
+            <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-gray-500">
-                Mostrando{" "}
-                <span className="font-semibold text-gray-800">
-                  {totalItems === 0 ? 0 : (currentPage - 1) * 10 + 1}
-                </span>{" "}
-                a{" "}
-                <span className="font-semibold text-gray-800">
-                  {(currentPage - 1) * 10 + flow.length}
-                </span>{" "}
-                de{" "}
-                <span className="font-semibold text-gray-800">
-                  {totalItems}
-                </span>{" "}
-                movimientos
+                Mostrando <span className="font-semibold text-gray-800">{firstItem}</span> a{" "}
+                <span className="font-semibold text-gray-800">{lastItem}</span> de{" "}
+                <span className="font-semibold text-gray-800">{flows.total}</span> movimientos
               </p>
-
               <div className="flex items-center gap-3 self-end sm:self-auto">
                 <button
-                  onClick={() => handleApplyDateFilter(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
+                  onClick={() => loadFlows(appliedRange[0], appliedRange[1], flows.page - 1)}
+                  disabled={flows.page <= 1 || loadingFlows}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <span className="text-lg">‹</span>
+                  <span className="text-lg leading-none">‹</span>
                   Anterior
                 </button>
-
                 <span className="text-sm font-medium text-gray-800">
-                  {currentPage} de {totalPages}
+                  {flows.page} de {flows.pages}
                 </span>
-
                 <button
-                  onClick={() => handleApplyDateFilter(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
+                  onClick={() => loadFlows(appliedRange[0], appliedRange[1], flows.page + 1)}
+                  disabled={flows.page >= flows.pages || loadingFlows}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Siguiente
-                  <span className="text-lg">›</span>
+                  <span className="text-lg leading-none">›</span>
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* MODAL */}
         {showModal && (
           <Modal
             title="Movimiento manual"
             onClose={() => setShowModal(false)}
             onConfirm={handleAddManualFlow}
             confirmText="Confirmar"
+            loading={saving}
             cancelText="Cancelar"
-            disableConfirm={!type || !amount || !description}
+            disableConfirm={!form.type || !form.amount || !form.description.trim()}
           >
             <div className="flex flex-col gap-4">
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="border p-2 rounded-md"
-              >
-                <option value="">Seleccionar tipo</option>
-                <option value="ingreso">Ingreso</option>
-                <option value="egreso">Egreso</option>
-              </select>
-
-              <input
-                type="number"
-                placeholder="Monto"
-                className="border p-2 rounded-md"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-
-              <input
-                type="text"
-                placeholder="Descripción"
-                className="border p-2 rounded-md"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <div>
+                <label htmlFor="flow-type" className="mb-1 block text-sm font-medium text-gray-700">
+                  Tipo
+                </label>
+                <select
+                  id="flow-type"
+                  value={form.type}
+                  onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                  className={`${inputClasses} cursor-pointer`}
+                >
+                  <option value="">Seleccionar tipo</option>
+                  <option value="ingreso">Ingreso</option>
+                  <option value="egreso">Egreso</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="flow-amount" className="mb-1 block text-sm font-medium text-gray-700">
+                  Monto (ARS)
+                </label>
+                <input
+                  id="flow-amount"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  className={inputClasses}
+                  value={form.amount}
+                  onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="flow-description" className="mb-1 block text-sm font-medium text-gray-700">
+                  Descripción
+                </label>
+                <input
+                  id="flow-description"
+                  type="text"
+                  placeholder="Ej: compra de insumos"
+                  className={inputClasses}
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                />
+              </div>
             </div>
           </Modal>
         )}

@@ -5,7 +5,6 @@ import SpareForm from "../components/SpareForm";
 import { AiOutlineDelete } from "react-icons/ai";
 import { FaRegEdit } from "react-icons/fa";
 import { IoMdAddCircleOutline } from "react-icons/io";
-import { useSearch } from "../context/SearchContext";
 import { SPARE_TYPES } from "../constants/spareTypes";
 import { FiSearch, FiUpload, FiPlus } from "react-icons/fi";
 import { HiOutlineExclamationTriangle } from "react-icons/hi2";
@@ -29,8 +28,15 @@ const StockList = () => {
     addPart,
     updatePart,
     removePart,
-    refreshBikeparts
+    refreshBikeparts,
+    fetchBootstrap
   } = useInventoryStore();
+
+  // Primera vez: carga todo. Si ya estaba cargado, refresca los repuestos (el stock pudo cambiar por presupuestos)
+  useEffect(() => {
+    fetchBootstrap();
+    refreshBikeparts();
+  }, [fetchBootstrap, refreshBikeparts]);
 
   const formatPrice = (price, currency) => {
   if (currency === "ARS") {
@@ -52,8 +58,7 @@ const StockList = () => {
     spare: null,
   });
 
-  const { searchTerm, setSearchTerm, setOnSearch, setSearchPlaceholder } =
-    useSearch();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const formRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,17 +68,6 @@ const StockList = () => {
   const [importLoading, setImportLoading] = useState(false);
   const importRef = useRef();
 
-  // Configurar buscador global
-  useEffect(() => {
-    setSearchPlaceholder("Buscar repuesto por descripción, código o marca");
-    setOnSearch(() => (term) => setSearchTerm(term));
-
-    return () => {
-      setSearchPlaceholder("Buscar cliente, trabajo o repuesto");
-      setOnSearch(null);
-      setSearchTerm("");
-    };
-  }, []);
 
   // Filtrado local según search y filter
   const filtered = bikeparts.filter((p) => {
@@ -115,7 +109,11 @@ const StockList = () => {
     });
   };
 
+  const [formSaving, setFormSaving] = useState(false);
+
   const handleFormSubmit = async (data) => {
+    if (formSaving) return;
+    setFormSaving(true);
     try {
       if (modalData.mode === "create") {
         const newPart = await createBikepart(data);
@@ -143,8 +141,9 @@ const StockList = () => {
 
       closeModal();
     } catch (err) {
-      console.error(err);
-      toast.error("Ocurrió un error al guardar");
+      toast.error(err?.error || err?.message || "Ocurrió un error al guardar");
+    } finally {
+      setFormSaving(false);
     }
   };
 
@@ -473,6 +472,7 @@ const StockList = () => {
           }
           onClose={closeModal}
           onConfirm={() => formRef.current?.requestSubmit()}
+          loading={formSaving}
           confirmText={
             modalData.mode === "create"
               ? "Agregar"
@@ -495,8 +495,8 @@ const StockList = () => {
           title="Actualizar precios desde Excel"
           onClose={() => setImportModalOpen(false)}
           onConfirm={handleImportExcel}
-          confirmText={importLoading ? "Importando..." : "Importar"}
-          disableConfirm={importLoading}
+          confirmText="Importar"
+          loading={importLoading}
         >
           <ImportPricesModal ref={importRef} />
         </Modal>

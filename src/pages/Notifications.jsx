@@ -5,9 +5,16 @@ import { FaRegCheckCircle, FaTrashAlt } from "react-icons/fa";
 import { fetchNotifications, markNotificationAsSeen, deleteNotification } from "../services/notificationService";
 import { confirmToast } from "../components/ConfirmToast";
 import { toast } from "react-toastify";
+import { useGlobalSearch } from "../context/SearchContext";
+import { LoadingDots } from "../components/ui-primitives";
+import { formatDate } from "../utils/dates";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
+  const searchTerm = useGlobalSearch("Buscar en notificaciones").trim().toLowerCase();
+  const visible = searchTerm
+    ? notifications.filter((n) => (n.message_body || "").toLowerCase().includes(searchTerm))
+    : notifications;
 
   const loadNotifications = async () => {
     try {
@@ -22,18 +29,19 @@ const Notifications = () => {
     loadNotifications();
   }, []);
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString();
-  };
+  const [markingId, setMarkingId] = useState(null);
 
   const markAsSeen = async (id) => {
+    if (markingId) return;
+    setMarkingId(id);
     try {
       await markNotificationAsSeen(id);
       window.dispatchEvent(new Event("notifications-updated"));
-      loadNotifications();
-    } catch (error) {
-      console.error("Error updating notification", error);
+      await loadNotifications();
+    } catch {
+      toast.error("No se pudo marcar como leída");
+    } finally {
+      setMarkingId(null);
     }
   };
 
@@ -60,14 +68,14 @@ const Notifications = () => {
           Notificaciones
         </h2>
 
-        {notifications.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="text-gray-500 text-center md:text-left">
             No hay notificaciones por el momento
           </p>
         ) : (
-          notifications.map((notif, i) => (
+          visible.map((notif) => (
             <div
-              key={i}
+              key={notif._id}
               className="border border-gray-300 rounded-md p-4 bg-white shadow-sm flex flex-col md:flex-row justify-between items-start gap-4"
             >
               <div className="flex-1 flex flex-col gap-1 overflow-hidden">
@@ -92,10 +100,10 @@ const Notifications = () => {
                 {!notif.seen && (
                   <button
                     onClick={() => markAsSeen(notif._id)}
-                    className="text-sm text-blue-600 hover:underline cursor-pointer flex gap-2 items-center whitespace-nowrap self-end md:self-auto"
+                    disabled={!!markingId}
+                    className="text-sm text-blue-600 hover:underline cursor-pointer flex gap-2 items-center whitespace-nowrap self-end md:self-auto disabled:cursor-wait"
                   >
-                    Marcar como leída
-                    <FaRegCheckCircle className="w-4 h-4 shrink-0" />
+                    {markingId === notif._id ? <LoadingDots /> : <>Marcar como leída <FaRegCheckCircle className="w-4 h-4 shrink-0" /></>}
                   </button>
                 )}
 

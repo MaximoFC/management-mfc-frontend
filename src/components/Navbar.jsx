@@ -14,22 +14,20 @@ const Navbar = ({ setSidebarOpen }) => {
   const avatarRef = useRef(null);
   const bellRef = useRef(null);
   const notificationRef = useRef(null);
-  const { searchTerm, setSearchTerm, onSearch, searchPlaceHolder } =
+  const { searchTerm, setSearchTerm, enabled: searchEnabled, searchPlaceHolder } =
     useSearch();
 
   const initials = employee?.name?.slice(0, 2).toUpperCase() || "US";
 
   const handleChange = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    if (onSearch) onSearch(term);
+    setSearchTerm(e.target.value);
   };
 
   useEffect(() => {
     const load = async () => {
       try {
-        const all = await fetchNotifications();
-        setNotifications(all.filter((n) => !n.seen).slice(0, 3));
+        // Solo las 3 últimas no vistas: no hace falta traer el historial completo
+        setNotifications(await fetchNotifications({ unseen: 1, limit: 3 }));
       } catch (error) {
         setNotifications([]);
         console.error("Error getting notifications: ", error);
@@ -82,6 +80,8 @@ const Navbar = ({ setSidebarOpen }) => {
         
         {/* Mobile menu */}
         <button
+          type="button"
+          aria-label="Abrir menú"
           className="md:hidden p-2 rounded-md hover:bg-gray-100"
           onClick={() => setSidebarOpen(true)}
         >
@@ -101,26 +101,32 @@ const Navbar = ({ setSidebarOpen }) => {
         </button>
 
         {/* Search */}
-        <div className="block md:hidden w-full">
-          <input
-            type="text"
-            placeholder={searchPlaceHolder}
-            className="border border-gray-300 rounded-xl px-4 py-2 w-full"
-            value={searchTerm}
-            onChange={handleChange}
-          />
-        </div>
+        {searchEnabled && (
+          <div className="block md:hidden w-full">
+            <input
+              type="search"
+              aria-label={searchPlaceHolder}
+              placeholder={searchPlaceHolder}
+              className="h-11 w-full rounded-xl border border-gray-300 px-4 outline-none focus:ring-2 focus:ring-gray-200"
+              value={searchTerm}
+              onChange={handleChange}
+            />
+          </div>
+        )}
       </div>
 
     {/* Search desktop */}
     <div className="hidden md:block flex-1 max-w-md">
-      <input
-        type="text"
-        placeholder={searchPlaceHolder}
-        className="border border-gray-300 rounded-xl px-4 py-2 w-full"
-        value={searchTerm}
-        onChange={handleChange}
-      />
+      {searchEnabled && (
+        <input
+          type="search"
+          aria-label={searchPlaceHolder}
+          placeholder={searchPlaceHolder}
+          className="h-11 w-full rounded-xl border border-gray-300 px-4 outline-none focus:ring-2 focus:ring-gray-200"
+          value={searchTerm}
+          onChange={handleChange}
+        />
+      )}
     </div>
 
     {/* Right */}
@@ -130,6 +136,9 @@ const Navbar = ({ setSidebarOpen }) => {
       <button
         className="relative flex items-center justify-center cursor-pointer p-1.5 w-10 h-10 border border-gray-300 rounded-full hover:bg-gray-100"
         ref={bellRef}
+        type="button"
+        aria-label="Notificaciones"
+        aria-expanded={showNotifications}
         onClick={() => setShowNotifications(!showNotifications)}
       >
         <IoIosNotificationsOutline className="h-6 w-6" />
@@ -189,6 +198,9 @@ const Navbar = ({ setSidebarOpen }) => {
       {/* Avatar */}
       <button
         ref={avatarRef}
+        type="button"
+        aria-label="Menú de usuario"
+        aria-expanded={isMenuOpen}
         className="flex justify-center items-center cursor-pointer w-10 h-10 border border-gray-300 rounded-full hover:bg-gray-100 text-sm font-semibold"
         onClick={() => setIsMenuOpen((prev) => !prev)}
       >

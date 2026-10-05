@@ -9,7 +9,7 @@ const Layout = ({ children }) => {
     <div className="flex min-h-screen bg-gray-100">
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-black text-white flex-col">
+      <aside className="hidden md:flex w-64 shrink-0 bg-black text-white flex-col sticky top-0 h-screen overflow-y-auto">
         <Sidebar />
       </aside>
 

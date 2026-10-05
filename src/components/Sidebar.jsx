@@ -6,14 +6,16 @@ import { MdOutlineAttachMoney } from "react-icons/md";
 import { TfiClipboard } from "react-icons/tfi";
 import { BsClipboardCheck } from "react-icons/bs";
 import Logo from "/Logo MFC.jpg";
+import { useAuth } from "../context/AuthContext";
 
 const Sidebar = () => {
   const { pathname } = useLocation();
+  const { isAdmin } = useAuth();
 
   const linkClasses = (path) =>
   `flex items-center gap-3 px-4 py-3 rounded-xl transition
     ${
-      pathname === path
+      pathname === path || pathname.startsWith(`${path}/`)
         ? "bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white"
         : "text-gray-300 hover:bg-gray-800"
     }`;
@@ -24,7 +26,7 @@ const Sidebar = () => {
 
         {/* Logo */}
         <div className="flex items-center gap-3 mb-6">
-          <img src={Logo} className="w-10 h-10" />
+          <img src={Logo} alt="MFC" className="w-10 h-10" />
           <div>
             <p className="font-bold">MFC</p>
             <p className="text-xs text-gray-400">Detailing Service</p>
@@ -56,9 +58,11 @@ const Sidebar = () => {
           <BsBox2 className="w-5 h-5" /> Inventario
         </Link>
 
-        <Link to="/caja" className={linkClasses("/caja")}>
-          <MdOutlineAttachMoney className="w-6 h-6" /> Caja
-        </Link>
+        {isAdmin && (
+          <Link to="/caja" className={linkClasses("/caja")}>
+            <MdOutlineAttachMoney className="w-6 h-6" /> Caja
+          </Link>
+        )}
       </div>
     </>
   );

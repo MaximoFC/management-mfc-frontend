@@ -3,23 +3,29 @@ import { forgotPassword } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import Logo from "/Logo MFC.jpg";
 import { FiMail } from "react-icons/fi";
+import { LoadingDots } from "../components/ui-primitives";
 
 const ForgotPasswordPage = () => {
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (loading) return;
         setError("");
         setMessage("");
+        setLoading(true);
 
         try {
             await forgotPassword(email);
-            setMessage("Si el email existe, se enviaron instrucciones");
+            setMessage("Si el email está registrado, te enviamos las instrucciones");
         } catch (err) {
             setError(err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -72,8 +78,12 @@ const ForgotPasswordPage = () => {
                     {message && <p className="text-green-500 text-xs">{message}</p>}
 
                     {/* Botón */}
-                    <button className="w-full h-10 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 cursor-pointer transition">
-                        Enviar instrucciones
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full h-10 inline-flex items-center justify-center bg-red-600 text-white rounded-md text-sm hover:bg-red-700 cursor-pointer transition disabled:cursor-wait disabled:opacity-80"
+                    >
+                        {loading ? <LoadingDots /> : "Enviar instrucciones"}
                     </button>
 
                     {/* Volver */}

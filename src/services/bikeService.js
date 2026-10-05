@@ -21,3 +21,11 @@ export async function addBike(bikeData) {
     throw error.response?.data || { message: "Error al agregar bicicleta" };
   }
 }
+export async function updateBike(id, bikeData) {
+  try {
+    const { data } = await api.put(`/bikes/${id}`, bikeData);
+    return data;
+  } catch (error) {
+    throw error.response?.data || { error: "Error al actualizar la bicicleta" };
+  }
+}

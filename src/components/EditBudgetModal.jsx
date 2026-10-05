@@ -1,402 +1,342 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
-import { useInventoryStore } from "../store/useInventoryStore";
-import { updateBikepart as apiUpdateBikepart } from "../services/bikepartService"; // si querés actualizar stock via API en otras acciones
+import { useRemoteList } from "../hooks/useRemoteList";
+import { searchServices } from "../services/serviceService";
+import { searchBikepartsPage } from "../services/bikepartService";
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Badge } from "./ui-primitives";
+import { FiSearch, FiTool, FiPackage, FiTrash2, FiPlus } from "react-icons/fi";
+import { toast } from "react-toastify";
+import { calculateEditableTotalARS, formatARS, formatPartPrice, getServicePriceARS } from "./budgetPricing";
+
+/**
+ * Fila de búsqueda + selección genérica (sirve tanto para servicios como repuestos).
+ * Se extrajo para no repetir el mismo bloque de input + dropdown dos veces.
+ */
+function SearchSelectRow({ placeholder, displayValue, searchValue, fetchOptions, excludeIds, onSearch, onSelect, renderOption }) {
+  const term = searchValue.trim();
+  const results = useRemoteList(
+    () => (term.length >= 2 ? fetchOptions(term) : Promise.resolve({ items: [] })),
+    term
+  );
+  const options = results.items.filter((opt) => !excludeIds.includes(opt._id));
+  const showDropdown = !displayValue && term.length >= 2 && options.length > 0;
+
+  return (
+    <div className="relative">
+      <FiSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+      <Input
+        value={displayValue || searchValue}
+        onChange={(e) => onSearch(e.target.value)}
+        placeholder={placeholder}
+        className="pl-9"
+      />
+      {showDropdown && (
+        <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-lg border border-gray-200 bg-white shadow-md">
+          {options.map((opt) => (
+            <button
+              type="button"
+              key={opt._id}
+              onClick={() => onSelect(opt)}
+              className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-gray-50"
+            >
+              {renderOption(opt)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const EditBudgetModal = ({ budget, onClose, onSave }) => {
-  const availableServices = useInventoryStore(s => s.services || []);
-  const availableParts = useInventoryStore(s => s.bikeparts || []);
-  const setMultipleBikepartStocks = useInventoryStore(s => s.setMultipleBikepartStocks);
+
   const [serviceSearchTerms, setServiceSearchTerms] = useState({});
   const [partSearchTerms, setPartSearchTerms] = useState({});
-
   const [services, setServices] = useState([]);
   const [parts, setParts] = useState([]);
-  const [total, setTotal] = useState(0);
+
+  const dollarRate = Number(budget.dollar_rate_used || 1);
 
   useEffect(() => {
     setServices(
-      (budget.services || []).map(s => ({
+      (budget.services || []).map((s) => ({
         _id: s.service_id?._id || s.service_id || s._id || "",
         name: s.name || "",
-        price: Number(s.price_usd ?? s.price ?? 0)
+        price: getServicePriceARS(s, dollarRate),
       }))
     );
 
     setParts(
-      (budget.parts || []).map(p => ({
+      (budget.parts || []).map((p) => ({
         _id: p.bikepart_id?._id || p.bikepart_id || p._id || "",
         description: p.description || p.bikepart_id?.description || "",
         price: Number(p.unit_price ?? 0),
         currency: p.currency || "USD",
-        amount: Number(p.amount || 1)
+        amount: Number(p.amount || 1),
       }))
     );
+  }, [budget, dollarRate]);
 
-    // initial total (usar moneda ARS si ya viene total_ars, sino calcular desde USD)
-    if (budget.total_ars != null) {
-      setTotal(Number(budget.total_ars));
-    } else {
-      const usd = (budget.total_usd != null) ? Number(budget.total_usd) : 0;
-      const rate = Number(budget.dollar_rate_used || 1);
-      setTotal(usd * rate);
-    }
-  }, [budget]);
+  // El total se deriva de services/parts en vez de guardarse en un state aparte:
+  // antes había que acordarse de llamar setTotal(...) manualmente después de
+  // cada acción, y era fácil (y pasó) olvidarse en algún handler.
+  const total = useMemo(
+    () => calculateEditableTotalARS(services, parts, dollarRate),
+    [services, parts, dollarRate]
+  );
 
-  const calculateTotal = (newServices, newParts) => {
-    const rate = Number(budget.dollar_rate_used || 1);
+  // --- Services ---
+  const addService = () => setServices((prev) => [...prev, { _id: "", name: "", price: 0 }]);
 
-    const servicesUsd = newServices.reduce(
-      (acc, s) => acc + Number(s.price || 0),
-      0
-    );
-
-    let partsUsd = 0;
-    let partsArs = 0;
-
-    newParts.forEach(p => {
-      const subtotal = Number(p.price || 0) * Number(p.amount || 0);
-
-      if (p.currency === "ARS") {
-        partsArs += subtotal;
-      } else {
-        partsUsd += subtotal;
-      }
+  const updateService = (index, srv) => {
+    setServices((prev) => {
+      const updated = [...prev];
+      updated[index] = { _id: srv._id, name: srv.name, price: Number(srv.price_ars || 0) };
+      return updated;
     });
-
-    const totalArs = partsArs + (servicesUsd + partsUsd) * rate;
-
-    return totalArs;
-  };
-
-  // Services
-  const addService = () => {
-    setServices(prev => [...prev, { _id: "", name: "", price: 0 }]);
-  };
-
-  const updateService = (index, serviceId) => {
-    const srv = availableServices.find(s => s._id === serviceId);
-    if (!srv) return;
-
-    const updated = [...services];
-    updated[index] = {
-      _id: srv._id,
-      name: srv.name,
-      price: Number(srv.price_usd || 0)
-    };
-
-    setServices(updated);
-    setTotal(calculateTotal(updated, parts));
   };
 
   const removeService = (index) => {
-    const updated = services.filter((_, i) => i !== index);
-    setServices(updated);
-    setTotal(calculateTotal(updated, parts));
+    setServices((prev) => prev.filter((_, i) => i !== index));
+    setServiceSearchTerms({}); // los términos se indexan por fila: al borrar se desfasan
   };
 
-  // Parts
-  const addPart = () => {
-    setParts(prev => [...prev, { _id: "", description: "", price: 0, currency: "USD", amount: 1 }]);
+  const updateServiceSearch = (index, value) => {
+    setServiceSearchTerms((prev) => ({ ...prev, [index]: value }));
+    // si el usuario vuelve a escribir, se limpia la selección previa
+    setServices((prev) => {
+      if (!prev[index]?._id) return prev;
+      const updated = [...prev];
+      updated[index] = { _id: "", name: "", price: 0 };
+      return updated;
+    });
   };
 
-  const updatePart = (index, partId) => {
-    const part = availableParts.find(p => p._id === partId);
-    if (!part) return;
+  // --- Parts ---
+  const addPart = () =>
+    setParts((prev) => [...prev, { _id: "", description: "", price: 0, currency: "USD", amount: 1 }]);
 
-    const updated = [...parts];
-    updated[index] = {
-      _id: part._id,
-      description: part.description,
-      price: part.pricing_currency === "ARS"
-        ? Number(part.sale_price_ars || 0)
-        : Number(part.price_usd || 0),
-      currency: part.pricing_currency === "ARS" ? "ARS" : "USD",
-      amount: 1
-    };
-
-    setParts(updated);
-    setTotal(calculateTotal(services, updated));
+  const updatePart = (index, part) => {
+    setParts((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        _id: part._id,
+        code: part.code,
+        stock: part.stock,
+        description: part.description,
+        price: Number(part.price || 0),
+        currency: part.currency === "ARS" ? "ARS" : "USD",
+        amount: 1,
+      };
+      return updated;
+    });
   };
 
   const updatePartAmount = (index, value) => {
-    const updated = [...parts];
-    const v = Number(value || 0) || 0;
-    updated[index].amount = v;
-    setParts(updated);
-    setTotal(calculateTotal(services, updated));
+    const qty = Number(value || 0) || 0;
+    setParts((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], amount: qty };
+      return updated;
+    });
   };
 
   const removePart = (index) => {
-    const updated = parts.filter((_, i) => i !== index);
-    setParts(updated);
-    setTotal(calculateTotal(services, updated));
+    setParts((prev) => prev.filter((_, i) => i !== index));
+    setPartSearchTerms({});
   };
 
-  // Actualizar búsqueda de servicios
-  const updateServiceSearch = (index, value) => {
-    setServiceSearchTerms(prev => ({
-      ...prev,
-      [index]: value
-    }));
-  };
-
-  // Actualizar búsqueda de repuestos
   const updatePartSearch = (index, value) => {
-    setPartSearchTerms(prev => ({
-      ...prev,
-      [index]: value
-    }));
+    setPartSearchTerms((prev) => ({ ...prev, [index]: value }));
+    setParts((prev) => {
+      if (!prev[index]?._id) return prev;
+      const updated = [...prev];
+      updated[index] = { ...updated[index], _id: "", description: "", price: 0 };
+      return updated;
+    });
   };
 
-  // Filtrar servicios
-  const getFilteredServices = (index) => {
-    const term = (serviceSearchTerms[index] || "").toLowerCase();
-    const selectedIds = services.map(s => s._id);
+  const [saving, setSaving] = useState(false);
 
-    if (term.length < 2) return [];
-
-    return availableServices
-      .filter(s =>
-        !selectedIds.includes(s._id) &&
-        (s.name.toLowerCase().includes(term) ||
-        (s.description || "").toLowerCase().includes(term))
-      )
-      .slice(0, 8);
-  };
-
-  // Filtrar repuestos
-  const getFilteredParts = (index) => {
-    const term = (partSearchTerms[index] || "").toLowerCase();
-    const selectedIds = parts.map(p => p._id);
-
-    if (term.length < 2) return [];
-
-    return availableParts
-      .filter(p =>
-        !selectedIds.includes(p._id) &&
-        (
-          (p.description || "").toLowerCase().includes(term) ||
-          (p.code || "").toLowerCase().includes(term)
-        )
-      )
-      .slice(0, 8);
-  };
-
-  const handleConfirm = () => {
-    const payload = {
-      services: services.map(s => ({
-        service_id: s._id
-      })),
-      bikeparts: parts.map(p => ({
-        bikepart_id: p._id,
-        amount: Number(p.amount || 1)
-      }))
-    };
-
-    onSave(payload);
+  // Las filas agregadas sin elegir servicio/repuesto se ignoran
+  const handleConfirm = async () => {
+    if (saving) return;
+    if (parts.some((p) => p._id && !(Number(p.amount) >= 1))) {
+      toast.warning("Revisá las cantidades de los repuestos");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({
+        services: services.filter((s) => s._id).map((s) => ({ service_id: s._id })),
+        bikeparts: parts.filter((p) => p._id).map((p) => ({ bikepart_id: p._id, amount: Number(p.amount) })),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Modal title="Editar presupuesto" onClose={onClose} onConfirm={handleConfirm}>
-      <div className="space-y-3">
-        {/* --- SERVICES --- */}
-        <h3 className="text-lg font-semibold mb-2">Servicios</h3>
-        <div className="flex flex-col gap-2">
-          {services.map((s, idx) => {
-            const subtotal = Number(s.price || 0);
-
-            return (
-              <div
-                key={idx}
-                className="border rounded-lg p-4 bg-gray-50 space-y-3"
-              > 
-                <div>
-                  <label className="font-medium text-sm text-gray-700">
-                    Servicio
-                  </label>
-                  <button
-                    className="text-red-500 text-sm"
+    <Modal
+      title="Editar presupuesto"
+      onClose={onClose}
+      onConfirm={handleConfirm}
+      confirmText="Guardar"
+      loading={saving}
+    >
+      <div className="space-y-6">
+        {/* --- SERVICIOS --- */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FiTool className="h-4 w-4 text-red-600" />
+              Servicios
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {services.map((s, idx) => (
+              <div key={idx} className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">Servicio</span>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="text-gray-400 hover:text-red-600"
+                    aria-label="Eliminar servicio"
                     onClick={() => removeService(idx)}
                   >
-                    Eliminar
-                  </button>
+                    <FiTrash2 className="h-4 w-4" />
+                  </Button>
                 </div>
 
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Buscar servicio..."
-                    value={
-                      services[idx]?._id
-                        ? services[idx].name
-                        : serviceSearchTerms[idx] || ""
-                    }
-                    onChange={(e) => {
-                      updateServiceSearch(idx, e.target.value);
-                      // Si empieza a escribir de nuevo, limpiar selección
-                      if (services[idx]?._id) {
-                        const updated = [...services];
-                        updated[idx] = { _id: "", name: "", price: 0 };
-                        setServices(updated);
-                      }
-                    }}
-                    className="border rounded px-3 py-2 w-full"
-                  />
-
-                  {/* Dropdown resultados */}
-                  {getFilteredServices(idx).length > 0 && !services[idx]?._id && (
-                    <div className="absolute z-10 bg-white border rounded shadow-md mt-1 w-full max-h-48 overflow-auto">
-                      {getFilteredServices(idx).map(srv => (
-                        <div
-                          key={srv._id}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                          onClick={() => {
-                            updateService(idx, srv._id);
-                            setServiceSearchTerms(prev => ({
-                              ...prev,
-                              [idx]: ""
-                            }));
-                          }}
-                        >
-                          <div className="font-medium">{srv.name}</div>
-                          <div className="text-xs text-gray-500">
-                            ${Number(srv.price_usd || 0).toLocaleString()}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                <SearchSelectRow
+                  placeholder="Buscar servicio..."
+                  displayValue={s._id ? s.name : ""}
+                  searchValue={serviceSearchTerms[idx] || ""}
+                  fetchOptions={(q) => searchServices({ q, limit: 8 })}
+                  excludeIds={services.map((x) => x._id)}
+                  onSearch={(value) => updateServiceSearch(idx, value)}
+                  onSelect={(srv) => {
+                    updateService(idx, srv);
+                    setServiceSearchTerms((prev) => ({ ...prev, [idx]: "" }));
+                  }}
+                  renderOption={(srv) => (
+                    <>
+                      <span className="font-medium">{srv.name}</span>
+                      <span className="text-xs text-gray-500">
+                        {formatARS(srv.price_ars)}
+                      </span>
+                    </>
                   )}
-                </div>
+                />
 
-                <div className="flex justify-between text-sm">
-                  <span>Precio:</span>
-                  <span>${subtotal.toLocaleString()}</span>
-                </div>
-
-                <div className="flex justify-between font-semibold">
-                  <span>Subtotal:</span>
-                  <span>${subtotal.toLocaleString()}</span>
+                <div className="flex items-center justify-between text-sm font-semibold">
+                  <span>Subtotal</span>
+                  <span>{formatARS(Number(s.price || 0))}</span>
                 </div>
               </div>
-            )
-          })}
-          <button onClick={addService} className="mt-2 bg-blue-500 text-white px-4 py-1 rounded">
-            + Agregar servicio
-          </button>
-        </div>
+            ))}
 
-        {/* --- PARTS --- */}
-        <h3 className="text-lg font-semibold mt-6 mb-2">Repuestos</h3>
-        <div className="flex flex-col gap-2">
-          {parts.map((p, idx) => {
-            const selectedPart = availableParts.find(x => x._id === p._id) || {};
-            const unitPrice = Number(p.price || 0);
-            const subtotal = unitPrice * Number(p.amount || 0);
+            <Button type="button" variant="outline" className="w-full gap-2" onClick={addService}>
+              <FiPlus className="h-4 w-4" />
+              Agregar servicio
+            </Button>
+          </CardContent>
+        </Card>
 
-            return (
-              <div
-                key={idx}
-                className="border rounded-lg p-4 bg-gray-50 space-y-3"
-              >
-                <div className="flex justify-between items-center">
-                  <label className="font-medium text-sm text-gray-700">
-                    Repuesto
-                  </label>
-                  <button
-                    className="text-red-500 text-sm"
-                    onClick={() => removePart(idx)}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-            
-                <div className="relative">
-                  <input
-                    type="text"
+        {/* --- REPUESTOS --- */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FiPackage className="h-4 w-4 text-red-600" />
+              Repuestos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {parts.map((p, idx) => {
+              const unitPrice = Number(p.price || 0);
+              const subtotal = unitPrice * Number(p.amount || 0);
+
+              return (
+                <div key={idx} className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-500">Repuesto</span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="text-gray-400 hover:text-red-600"
+                      aria-label="Eliminar repuesto"
+                      onClick={() => removePart(idx)}
+                    >
+                      <FiTrash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <SearchSelectRow
                     placeholder="Buscar por código o descripción..."
-                    value={
-                      parts[idx]?._id
-                        ? `${selectedPart.code || ""} - ${selectedPart.description || ""}`
-                        : partSearchTerms[idx] || ""
-                    }
-                    onChange={(e) => {
-                      updatePartSearch(idx, e.target.value);
-                    
-                      // Si empieza a escribir, limpiar selección previa
-                      if (parts[idx]?._id) {
-                        const updated = [...parts];
-                        updated[idx] = { _id: "", description: "", price: 0, amount: 1 };
-                        setParts(updated);
-                      }
+                    displayValue={p._id ? [p.code, p.description].filter(Boolean).join(" - ") : ""}
+                    searchValue={partSearchTerms[idx] || ""}
+                    fetchOptions={(q) => searchBikepartsPage({ search: q, limit: 8 })}
+                    excludeIds={parts.map((x) => x._id)}
+                    onSearch={(value) => updatePartSearch(idx, value)}
+                    onSelect={(part) => {
+                      updatePart(idx, part);
+                      setPartSearchTerms((prev) => ({ ...prev, [idx]: "" }));
                     }}
-                    className="border rounded px-3 py-2 w-full"
+                    renderOption={(part) => (
+                      <>
+                        <span className="font-medium">
+                          {part.code} — {part.description}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          Stock: {part.stock} | {formatPartPrice(part)}
+                        </span>
+                      </>
+                    )}
                   />
 
-                  {/* Dropdown resultados */}
-                  {getFilteredParts(idx).length > 0 && !parts[idx]?._id && (
-                    <div className="absolute z-10 bg-white border rounded shadow-md mt-1 w-full max-h-48 overflow-auto">
-                      {getFilteredParts(idx).map(part => (
-                        <div
-                          key={part._id}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                          onClick={() => {
-                            updatePart(idx, part._id);
-                            setPartSearchTerms(prev => ({
-                              ...prev,
-                              [idx]: ""
-                            }));
-                          }}
-                        >
-                          <div className="font-medium">
-                            {part.code} — {part.description}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Stock: {part.stock} | ${Number(part.price_usd || 0).toLocaleString()}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Precio unitario</span>
+                    <span>{formatARS(unitPrice)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Cantidad</span>
+                    <Input
+                      type="number"
+                      min="1"
+                      className="w-20 text-right"
+                      value={p.amount}
+                      onChange={(e) => updatePartAmount(idx, e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm font-semibold">
+                    <span>Subtotal</span>
+                    <span>{formatARS(subtotal)}</span>
+                  </div>
+
+                  {p.stock != null && (
+                    <Badge variant="outline" className="w-fit text-xs font-normal text-gray-500">
+                      Stock disponible: {p.stock}
+                    </Badge>
                   )}
                 </div>
-                
-                <div className="flex justify-between text-sm">
-                  <span>Precio unitario:</span>
-                  <span>${unitPrice.toLocaleString()}</span>
-                </div>
-                
-                <div className="flex justify-between items-center text-sm">
-                  <span>Cantidad:</span>
-                  <input
-                    type="number"
-                    min="1"
-                    className="border rounded px-2 py-1 w-20 text-right"
-                    value={p.amount}
-                    onChange={(e) => updatePartAmount(idx, e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex justify-between font-semibold">
-                  <span>Subtotal:</span>
-                  <span>${subtotal.toLocaleString()}</span>
-                </div>
-                
-                <div className="text-xs text-gray-500">
-                  Stock disponible: {selectedPart.stock ?? "-"}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          <button onClick={addPart} className="mt-2 bg-blue-500 text-white px-4 py-2 rounded w-full sm:w-auto">
-            + Agregar repuesto
-          </button>
-        </div>
+            <Button type="button" variant="outline" className="w-full gap-2" onClick={addPart}>
+              <FiPlus className="h-4 w-4" />
+              Agregar repuesto
+            </Button>
+          </CardContent>
+        </Card>
 
-        <div className="mt-6 text-right">
-          <p className="text-xl font-bold text-green-700">
-            Total estimado (ARS): ${Number(total || 0).toLocaleString("es-AR")}
-          </p>
+        <div className="flex items-center justify-between rounded-xl bg-gray-50 p-4">
+          <span className="font-semibold">Total estimado (ARS)</span>
+          <span className="text-xl font-bold text-gray-900">{formatARS(total)}</span>
         </div>
       </div>
     </Modal>

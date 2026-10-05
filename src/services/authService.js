@@ -12,15 +12,6 @@ export const loginEmployee = async (email, password) => {
     }
 };
 
-export const getToken = () => {
-    return localStorage.getItem('token');
-};
-
-export const getCurrentEmployee = () => {
-    const employee = localStorage.getItem('employee');
-    return employee ? JSON.parse(employee) : null
-};
-
 export const getProfile = async () => {
     try {
         const res = await api.get("/auth/profile");

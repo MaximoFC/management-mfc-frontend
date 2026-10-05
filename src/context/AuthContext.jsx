@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getProfile } from "../services/authService";
 import api from "../services/api";
+import { useBudgetStore } from "../store/useBudgetStore";
+import { useInventoryStore } from "../store/useInventoryStore";
 
 const AuthContext = createContext();
 
@@ -10,6 +12,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     const isAuthenticated = !!token && !!employee;
+    const isAdmin = employee?.role === "admin";
 
     useEffect(() => {
         let isMounted = true;
@@ -71,13 +74,17 @@ export const AuthProvider = ({ children }) => {
 
         delete api.defaults.headers.common["Authorization"];
 
+        // No dejar datos de la sesión anterior en una PC compartida
+        useBudgetStore.getState().clearBudget();
+        useInventoryStore.setState({ bikeparts: [], clients: [], initialized: false });
+
         setEmployee(null);
         setToken(null);
         setLoading(false);
     };
 
     return (
-        <AuthContext.Provider value={{ employee, token, login, logout, loading, isAuthenticated }}>
+        <AuthContext.Provider value={{ employee, token, login, logout, loading, isAuthenticated, isAdmin }}>
             {children}
         </AuthContext.Provider>
     );

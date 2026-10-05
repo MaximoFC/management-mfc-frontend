@@ -10,9 +10,9 @@ export const createBudget = async (data) => {
   }
 };
 
-export const fetchBudgets = async () => {
+export const fetchBudgets = async ({ states } = {}) => {
   try {
-    const { data } = await api.get("/budgets");
+    const { data } = await api.get("/budgets", { params: { states: states?.join(",") } });
     return data;
   } catch (error) {
     console.error("Error fetching budgets: ", error);
@@ -52,9 +52,9 @@ export const fetchBudgetsByClient = async (clientId) => {
 
 export const getActiveWarranties = async (clientId, bikeId) => {
   try {
-    const { data } = await api.get(
-      `/budgets/active-warranties?client_id=${clientId}&bike_id=${bikeId}`
-    );
+    const { data } = await api.get("/budgets/active-warranties", {
+      params: { client_id: clientId, bike_id: bikeId },
+    });
     return data;
   } catch (error) {
     console.error("Error fetching active warranties: ", error);
@@ -82,5 +82,23 @@ export const updateBudgetItems = async (budgetId, itemsData) => {
   } catch (error) {
     console.error("Error updating budget items: ", error);
     throw error.response?.data || { message: "Error al actualizar ítems del presupuesto" };
+  }
+};
+
+export const completeCheckup = async (budgetId, serviceId, checkupDate) => {
+  try {
+    const { data } = await api.patch(`/budgets/${budgetId}/checkup`, { serviceId, checkupDate });
+    return data;
+  } catch (error) {
+    throw error.response?.data || { message: "Error al registrar la revisión" };
+  }
+};
+
+export const voidWarranty = async (budgetId, serviceId) => {
+  try {
+    const { data } = await api.patch(`/budgets/${budgetId}/warranty/void`, { serviceId });
+    return data;
+  } catch (error) {
+    throw error.response?.data || { message: "Error al anular la garantía" };
   }
 };

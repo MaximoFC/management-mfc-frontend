@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { registerWithToken } from "../services/authService";
 import Logo from "/Logo MFC.jpg";
 import { FiUser, FiLock } from "react-icons/fi";
+import { LoadingDots } from "../components/ui-primitives";
 
 const RegisterPage = () => {
     const [searchParams] = useSearchParams();
@@ -13,6 +14,7 @@ const RegisterPage = () => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (!token) setError("Token inválido");
@@ -20,9 +22,16 @@ const RegisterPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (loading) return;
         setError("");
         setSuccess("");
 
+        if (password.length < 8) {
+            setError("La contraseña debe tener al menos 8 caracteres");
+            return;
+        }
+
+        setLoading(true);
         try {
             await registerWithToken({ token, name, password });
             setSuccess("Cuenta creada correctamente");
@@ -30,6 +39,7 @@ const RegisterPage = () => {
             setTimeout(() => navigate("/login"), 1500);
         } catch (err) {
             setError(err.message);
+            setLoading(false);
         }
     };
 
@@ -82,8 +92,12 @@ const RegisterPage = () => {
                     {error && <p className="text-red-500 text-xs">{error}</p>}
                     {success && <p className="text-green-500 text-xs">{success}</p>}
 
-                    <button className="h-10 bg-red-600 text-white rounded-md hover:bg-red-700 cursor-pointer">
-                        Crear cuenta
+                    <button
+                        type="submit"
+                        disabled={loading || !!success}
+                        className="h-10 inline-flex items-center justify-center bg-red-600 text-white rounded-md hover:bg-red-700 cursor-pointer disabled:cursor-wait disabled:opacity-80"
+                    >
+                        {loading ? <LoadingDots /> : "Crear cuenta"}
                     </button>
                 </form>
             </div>

@@ -1,3 +1,4 @@
+import { bikeLabel } from "../utils/bikes";
 import Layout from "../components/Layout";
 import { useEffect, useState } from "react";
 import { LuPlus } from "react-icons/lu";
@@ -9,15 +10,17 @@ import { fetchDashboardData } from "../services/dashboardService";
 import ClipLoader from "react-spinners/ClipLoader";
 import { FiAlertTriangle } from "react-icons/fi";
 import InviteUserCard from "../components/InviteUserCard";
+import { useAuth } from "../context/AuthContext";
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const result = await fetchDashboardData();
+        const result = await fetchDashboardData({ includeCash: isAdmin });
         setData(result);
       } catch (err) {
         console.error("Error al cargar el dashboard", err);
@@ -27,15 +30,20 @@ const Dashboard = () => {
     };
 
     loadDashboard();
-  }, []);
+  }, [isAdmin]);
 
-  if (loading)
+  if (loading || !data)
     return (
-      <div className="flex items-center justify-center h-[80vh]">
-        <ClipLoader color="#ef4444" size={50} />
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center h-[60vh]">
+          {loading ? (
+            <ClipLoader color="#D90429" size={40} />
+          ) : (
+            <p className="text-gray-500">No se pudo cargar el resumen. Probá recargar la página.</p>
+          )}
+        </div>
+      </Layout>
     );
-  if (!data) return <p className="p-4 text-red-600">Error al cargar datos.</p>;
 
   return (
     <Layout>
@@ -77,12 +85,14 @@ const Dashboard = () => {
 
         {/* Métricas principales */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <MetricCard
-            title="Caja actual"
-            value={`$${data.currentCash.toLocaleString("es-AR")}`}
-            subtitle="Saldo disponible"
-            color="text-green-500"
-          />
+          {isAdmin && (
+            <MetricCard
+              title="Caja actual"
+              value={`$${data.currentCash.toLocaleString("es-AR")}`}
+              subtitle="Saldo disponible"
+              color="text-green-500"
+            />
+          )}
           <MetricCard
             title="Trabajos pendientes"
             value={data.trabajosPendientes}
@@ -104,7 +114,7 @@ const Dashboard = () => {
         {/* Trabajos recientes + Acciones rápidas */}
         <div className="flex flex-col lg:flex-row gap-4">
           <RecentWorks trabajos={data.trabajosRecientes} />
-          <SideActions pendientes={data.pendientesRetiro} />
+          <SideActions pendientes={data.pendientesRetiro} isAdmin={isAdmin} />
         </div>
       </div>
     </Layout>
@@ -140,7 +150,7 @@ const RecentWorks = ({ trabajos }) => (
           : "Cliente desconocido";
 
         const bikeModel = bike
-          ? `${bike.brand} ${bike.model}`.trim()
+          ? bikeLabel(bike)
           : "Bicicleta desconocida";
 
         return (
@@ -194,7 +204,7 @@ const RecentWorks = ({ trabajos }) => (
   </div>
 );
 
-const SideActions = ({ pendientes }) => (
+const SideActions = ({ pendientes, isAdmin }) => (
   <div className="lg:w-2/5 flex flex-col gap-4">
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col gap-3">
       <h2 className="text-xl sm:text-2xl font-semibold">Acciones rápidas</h2>
@@ -239,7 +249,7 @@ const SideActions = ({ pendientes }) => (
             : "Cliente desconocido";
 
           const bikeModel = bike
-            ? `${bike.brand} ${bike.model}`.trim()
+            ? bikeLabel(bike)
             : "Bicicleta desconocida";
 
           return (
@@ -254,9 +264,11 @@ const SideActions = ({ pendientes }) => (
         })
       )}
     </div>
-    <div className="flex flex-col gap-3">
-      <InviteUserCard />
-    </div>
+    {isAdmin && (
+      <div className="flex flex-col gap-3">
+        <InviteUserCard />
+      </div>
+    )}
   </div>
 );
 
