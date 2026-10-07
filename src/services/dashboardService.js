@@ -1,55 +1,11 @@
+import api from "./api";
 import { getBalance } from "./cashService";
-import { fetchBudgets } from "./budgetService";
-import { fetchClients } from "./clientService";
-import { useInventoryStore } from "../store/useInventoryStore";
-import { fetchNotifications } from "./notificationService";
 
-export const fetchDashboardData = async () => {
-    try {
-        const [cashRes, budgetRes, clientsRes, notificationsRes] = await Promise.all([
-            getBalance(),
-            fetchBudgets(),
-            fetchClients(),
-            fetchNotifications()
-        ]);
-        
-        const parts = useInventoryStore.getState().bikeparts || [];
-
-        const cash = cashRes?.balance || 0;
-        const budgets = budgetRes || [];
-        const clients = clientsRes || [];
-        const notifications = notificationsRes || [];
-
-        const lastMonth = new Date();
-        lastMonth.setMonth(lastMonth.getMonth() - 1);
-
-        const trabajosPendientes = budgets.filter(b => b.state?.toLowerCase().includes("iniciado")).length;
-        const pendientesRetiro = budgets.filter(b => b.state?.toLowerCase().includes("terminado"));
-        const trabajosRecientes = [...budgets]
-            .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date))
-            .slice(0, 3);
-
-        const totalClients = clients.length;
-        const newClients = clients.filter(c => new Date(c.createdAt) >= lastMonth).length;
-
-        const lowStock = parts.filter(p => p.stock <= 5);
-
-        const recentNotifications = [...notifications]
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 3);
-
-        return {
-            currentCash: cash,
-            trabajosPendientes,
-            pendientesRetiro,
-            trabajosRecientes,
-            totalClients,
-            newClients,
-            lowStock: lowStock.length,
-            notifications: recentNotifications
-        };
-    } catch (error) {
-        console.error("Error cargando dashboard: ", error);
-        throw error;
-    }
+export const fetchDashboardData = async ({ includeCash = false } = {}) => {
+    const [summary, cashRes] = await Promise.all([
+        api.get("/bootstrap/dashboard").then((res) => res.data),
+        // sin caja el resto del dashboard igual carga
+        includeCash ? getBalance().catch(() => null) : null,
+    ]);
+    return { ...summary, currentCash: cashRes?.balance || 0 };
 };

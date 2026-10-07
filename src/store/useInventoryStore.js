@@ -1,11 +1,8 @@
 import { create } from "zustand";
-import { fetchServices } from "../services/serviceService";
 import { fetchBikeparts } from "../services/bikepartService";
 import { fetchClients } from "../services/clientService";
-import { fetchBikesByClient } from "../services/bikeService";
 
 export const useInventoryStore = create((set, get) => ({
-  services: [],
   bikeparts: [],
   clients: [],
   initialized: false,
@@ -17,23 +14,15 @@ export const useInventoryStore = create((set, get) => ({
     set({ loadingBootstrap: true });
 
     try {
-      const [services, bikeparts, clientsData] = await Promise.all([
-        fetchServices(),
+      // Se carga solo en las pantallas que lo usan (clientes, inventario), no al iniciar sesión
+      const [bikeparts, clients] = await Promise.all([
         fetchBikeparts(),
-        fetchClients(),
+        fetchClients("", { withBikes: true }),
       ]);
 
-      const clientsWithBikes = await Promise.all(
-        clientsData.map(async (client) => {
-          const bikes = await fetchBikesByClient(client._id);
-          return { ...client, bikes };
-        })
-      );
-
       set({
-        services,
         bikeparts,
-        clients: clientsWithBikes,
+        clients,
         initialized: true,
         loadingBootstrap: false,
       });
@@ -44,6 +33,7 @@ export const useInventoryStore = create((set, get) => ({
   },
 
   refreshBikeparts: async () => {
+    if (!get().initialized) return; // se cargará fresco al entrar al inventario
     try {
       const bikeparts = await fetchBikeparts();
       set({ bikeparts });
@@ -80,9 +70,9 @@ export const useInventoryStore = create((set, get) => ({
       }),
     }));
   },
-  addClient: (newClient) => {
+    addClient: (newClient) => {
     set((state) => ({
-      clients: [...state.clients, { ...newClient, bikes: [] }],
+      clients: [{ ...newClient, bikes: newClient.bikes || [] }, ...state.clients],
     }));
   },
 
@@ -115,13 +105,6 @@ export const useInventoryStore = create((set, get) => ({
             }
           : c
       ),
-    }));
-  },
-
-  // --- Servicios ---
-  addServiceLocal: (newService) => {
-    set((state) => ({
-      services: [newService, ...state.services],
     }));
   },
 }));

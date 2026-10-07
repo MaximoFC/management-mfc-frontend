@@ -19,7 +19,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        console.error("API Error: ", error);
+        // Token vencido o inválido: cerrar sesión y volver al login
+        if (error.response?.status === 401 && localStorage.getItem("token")) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("employee");
+            localStorage.removeItem("budget-storage"); // borrador del presupuesto en armado
+            window.location.href = "/login";
+        }
         return Promise.reject(error);
     }
 );

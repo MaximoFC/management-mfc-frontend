@@ -15,26 +15,6 @@ export const fetchBikeparts = async (search = "", type = "") => {
 };
 
 
-export const searchBikeParts = async (q) => {
-  try {
-    const { data } = await api.get(`/bikeparts/search?q=${encodeURIComponent(q)}`);
-    return data;
-  } catch (err) {
-    console.error("Error searching bikeparts: ", err);
-    throw err.response?.data || { message: "Error buscando repuestos" };
-  }
-};
-
-export const getBikepartById = async (id) => {
-  try {
-    const { data } = await api.get(`/bikeparts/${id}`);
-    return data;
-  } catch (err) {
-    console.error(`Error fetching bikepart with id ${id}: `, err);
-    throw err.response?.data || { message: "Error obteniendo repuesto" };
-  }
-};
-
 export const createBikepart = async (bikepart) => {
   try {
     const { data } = await api.post(`/bikeparts`, bikepart);
@@ -51,16 +31,6 @@ export const updateBikepart = async (id, bikepart) => {
     return data;
   } catch (err) {
     console.error(`Error updating bikepart with id ${id}: `, err);
-    throw err.response?.data || { message: "Error actualizando repuesto" };
-  }
-};
-
-export const updateBikepartPartial = async (id, payload) => {
-  try {
-    const {data} = await api.patch(`/bikeparts/${id}`, payload);
-    return data;
-  } catch (err) {
-    console.error(`Error partially updating bikepart ${id}:`, err);
     throw err.response?.data || { message: "Error actualizando repuesto" };
   }
 };
@@ -104,4 +74,12 @@ export const importBikePartPricesExcel = async (file) => {
     console.error("Error importing excel prices: ", err);
     throw err.response?.data || { message: "Error importando excel" };
   }
+};
+
+// Búsqueda paginada en el servidor: { items, total, page, pages }
+export const searchBikepartsPage = async ({ search = "", type = "", inStock = true, page = 1, limit = 10 } = {}) => {
+  const { data } = await api.get("/bikeparts", {
+    params: { search: search || undefined, type: type || undefined, inStock: inStock ? 1 : undefined, page, limit },
+  });
+  return data;
 };

@@ -4,42 +4,45 @@ import { useState } from "react";
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  return (
-    <div className="min-h-screen flex flex-col">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
-        <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      </header>
 
-      <aside className="hidden md:block fixed top-20 left-0 w-64 h-[calc(100vh-80px)] bg-white z-40 shadow-md">
-        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 shrink-0 bg-black text-white flex-col sticky top-0 h-screen overflow-y-auto">
+        <Sidebar />
       </aside>
 
+      {/* Mobile Sidebar */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-50 bg-transparent"
+          className="fixed inset-0 z-50 bg-black/40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         >
           <div
-            className="fixed top-0 left-0 w-64 h-full bg-white shadow-md p-4"
+            className="w-64 h-full bg-black text-white"
             onClick={(e) => e.stopPropagation()}
           >
-            <Sidebar
-              sidebarOpen={sidebarOpen}
-              setSidebarOpen={setSidebarOpen}
-            />
-            <button
-              className="mt-4 p-2 bg-red-500 text-white rounded-md"
-              onClick={() => setSidebarOpen(false)}
-            >
-              Cerrar
-            </button>
+            <Sidebar />
           </div>
         </div>
       )}
 
-      <main className="md:ml-64 mt-20 p-4 sm:p-6 bg-gray-100 min-h-screen overflow-x-auto">
-        {children}
-      </main>
+      {/* Content */}
+      <div className="flex flex-col flex-1">
+
+        {/* Navbar */}
+        <header className="h-20 bg-white border-b border-gray-200 flex items-center px-4 md:px-6">
+          <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        </header>
+
+        {/* Main */}
+        <main className="flex-1 p-4 md:p-6 overflow-x-auto overflow-y-auto">
+          {children}
+        </main>
+
+      </div>
+
     </div>
   );
 };

@@ -1,9 +1,10 @@
 import api from "./api";
 
-export async function fetchClients(query = '') {
+export async function fetchClients(query = '', { withBikes = false, limit } = {}) {
   try {
-    const url = query ? `/clients?q=${encodeURIComponent(query)}` : "/clients";
-    const { data } = await api.get(url);
+    const { data } = await api.get("/clients", {
+      params: { q: query || undefined, withBikes: withBikes ? 1 : undefined, limit },
+    });
     return data;
   } catch (error) {
     console.error("Error fetching clients: ", error);

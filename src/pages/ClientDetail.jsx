@@ -2,15 +2,18 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import ClientBikesModal from "../components/ClientBikesModal";
+import EditBikeModal from "../components/EditBikeModal";
+import { FiEdit2 } from "react-icons/fi";
 import { useInventoryStore } from "../store/useInventoryStore";
-import { updateClient as updateClientService } from "../services/clientService";
+import { updateClient as updateClientService, fetchClientById } from "../services/clientService";
 import { fetchBudgetsByClient } from "../services/budgetService"; // traer presupuestos
+import { formatARS, getServicePriceARS } from "../components/budgetPricing";
+import { LoadingDots } from "../components/ui-primitives";
 
 const ITEMS_PER_PAGE = 5;
 
 const ClientDetail = () => {
   const { id } = useParams();
-  const clients = useInventoryStore((state) => state.clients);
   const postUpdateClient = useInventoryStore((state) => state.updateClient);
 
   const [client, setClient] = useState(null);
@@ -25,26 +28,27 @@ const ClientDetail = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedBike, setSelectedBike] = useState(null);
+  const [editingBike, setEditingBike] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // --- Cargar cliente desde store ---
+  // --- Cargar solo este cliente (no la lista completa) ---
   useEffect(() => {
-    if (!clients || clients.length === 0) return;
-
-    const c = clients.find((cl) => cl._id === id);
-    if (!c) {
-      setError("Cliente no encontrado");
-      setLoading(false);
-      return;
-    }
-
-    setClient(c);
-    setEditName(c.name);
-    setEditSurname(c.surname);
-    setEditMobileNum(c.mobileNum);
-
-    setLoading(false);
-  }, [id, clients]);
+    let active = true;
+    setLoading(true);
+    fetchClientById(id)
+      .then(({ client: c, bikes }) => {
+        if (!active) return;
+        setClient({ ...c, bikes });
+        setEditName(c.name);
+        setEditSurname(c.surname);
+        setEditMobileNum(c.mobileNum);
+      })
+      .catch(() => active && setError("Cliente no encontrado"))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
   // --- Seleccionar primera bicicleta por defecto ---
   useEffect(() => {
@@ -70,7 +74,8 @@ const ClientDetail = () => {
     };
 
     fetchBudgets();
-  }, [client]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar de cliente, no al agregar bicis
+  }, [client?._id]);
 
   const handleSaveChanges = async () => {
     try {
@@ -153,7 +158,7 @@ const ClientDetail = () => {
           onClick={handleSaveChanges}
           disabled={saving}
         >
-          {saving ? "Guardando..." : "Guardar cambios"}
+          {saving ? <LoadingDots /> : "Guardar cambios"}
         </button>
 
         <div className="mt-6 flex justify-between items-center">
@@ -169,23 +174,46 @@ const ClientDetail = () => {
         {clientBikes.length === 0 ? (
           <p className="text-gray-600">Sin bicicletas registradas.</p>
         ) : (
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             {clientBikes.map((bike) => (
-              <button
+              <div
                 key={bike._id}
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   setSelectedBike(bike._id);
                   setCurrentPage(1);
                 }}
-                className={`flex flex-col items-start p-4 rounded-lg shadow-md border w-56 text-left transition cursor-pointer ${
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setSelectedBike(bike._id);
+                    setCurrentPage(1);
+                  }
+                }}
+                className={`relative flex flex-col items-start p-4 rounded-lg shadow-md border w-56 text-left transition cursor-pointer ${
                   selectedBike === bike._id
                     ? "border-b-2 border-red-500 font-semibold"
                     : "text-gray-600"
                 }`}
               >
-                <h4>
-                  {bike.brand} {bike.model} ({bike.color})
+                <button
+                  type="button"
+                  aria-label={`Editar ${bike.brand} ${bike.model}`}
+                  title="Editar bicicleta"
+                  className="absolute right-3 top-3 cursor-pointer text-gray-400 hover:text-gray-800"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingBike(bike);
+                  }}
+                >
+                  <FiEdit2 className="h-4 w-4" />
+                </button>
+                <h4 className="pr-6">
+                  {bike.brand} {bike.model} {bike.color && `(${bike.color})`}
                 </h4>
+                <p className="mt-1 text-xs font-normal text-gray-500">
+                  {bike.serialNumber ? `N° de serie: ${bike.serialNumber}` : "Sin número de serie"}
+                </p>
                 <p
                   className={`text-xs mt-1 px-2 py-1 rounded-full ${
                     bike.active
@@ -195,7 +223,7 @@ const ClientDetail = () => {
                 >
                   {bike.active ? "Activa" : "Deshabilitada"}
                 </p>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -248,7 +276,7 @@ const ClientDetail = () => {
                       <ul className="ml-4 list-disc text-sm text-gray-700">
                         {item.services.map((service, i) => (
                           <li key={i} className="mb-1">
-                            {service.name} - ${service.price_usd}
+                            {service.name} - {formatARS(getServicePriceARS(service, item.dollar_rate_used))}
                             {service.warranty?.hasWarranty && (
                               <span className="ml-2 text-xs text-blue-600">
                                 Garantía activa hasta{" "}
@@ -272,8 +300,7 @@ const ClientDetail = () => {
                       <ul className="ml-4 list-disc text-sm text-gray-700">
                         {item.parts.map((part, i) => (
                           <li key={i}>
-                            {part.bikepart_id?.brand} - {part.description} ($
-                            {part.unit_price_usd})
+                            {part.description} x{part.amount} ({part.currency} {part.unit_price})
                           </li>
                         ))}
                       </ul>
@@ -315,9 +342,20 @@ const ClientDetail = () => {
           )}
         </div>
 
+        {editingBike && (
+          <EditBikeModal
+            bike={editingBike}
+            onClose={() => setEditingBike(null)}
+            onSaved={(updated) =>
+              setClient((c) => ({ ...c, bikes: c.bikes.map((b) => (b._id === updated._id ? { ...b, ...updated } : b)) }))
+            }
+          />
+        )}
+
         {showModal && (
           <ClientBikesModal
             client={client}
+            onBikeAdded={(bike) => setClient((c) => ({ ...c, bikes: [...(c.bikes || []), bike] }))}
             closeModal={() => setShowModal(false)}
           />
         )}

@@ -3,16 +3,17 @@ import { persist } from "zustand/middleware";
 
 export const useBudgetStore = create(
     persist(
-        (set, get) => ({
+        (set) => ({
             
             clientId: null,
+            clientLabel: "",
             bikeId: null,
             
             selectedServices: [],
             selectedBikeparts: [],
             coveredServices: [],
             
-            setClientId: (id) => set({ clientId: id }),
+            setClientId: (id, label = "") => set({ clientId: id, clientLabel: label }),
             setBikeId: (id) => set({ bikeId: id }),
             
             toggleService: (service) =>
@@ -37,6 +38,13 @@ export const useBudgetStore = create(
                     };
                 }),
             
+            updateSelectedService: (service) =>
+                set((state) => ({
+                    selectedServices: state.selectedServices.map((s) =>
+                        s._id === service._id ? { ...s, ...service } : s
+                    ),
+                })),
+
             removeService: (id) =>
                 set((state) => ({
                     selectedServices: state.selectedServices.filter(
@@ -45,6 +53,8 @@ export const useBudgetStore = create(
                     coveredServices: state.coveredServices.filter((c) => c !== id),
                 })),
             
+            setCoveredServices: (ids) => set({ coveredServices: ids }),
+
             toggleCoveredService: (id) =>
                 set((state) => {
                     const exists = state.coveredServices.includes(id);
@@ -62,8 +72,10 @@ export const useBudgetStore = create(
                     };
                 }),
             
-            addBikepart: (id) =>
+            // Guarda una copia del repuesto: el catálogo ya no está cargado completo en memoria
+            addBikepart: (part) =>
                 set((state) => {
+                    const id = part._id;
                     const exists = state.selectedBikeparts.find(
                         (p) => p.bikepart_id === id
                     );
@@ -79,7 +91,7 @@ export const useBudgetStore = create(
                     return {
                         selectedBikeparts: [
                             ...state.selectedBikeparts,
-                            { bikepart_id: id, amount: 1 },
+                            { bikepart_id: id, amount: 1, part },
                         ],
                     };
                 }),
@@ -87,7 +99,7 @@ export const useBudgetStore = create(
             updateBikepartAmount: (id, amount) =>
                 set((state) => ({
                     selectedBikeparts: state.selectedBikeparts.map((p) =>
-                        p.bikepart_id === id ? { ...p, amount } : p
+                        p.bikepart_id === id ? { ...p, amount: Number(amount) } : p
                     ),
                 })),
             
@@ -101,6 +113,7 @@ export const useBudgetStore = create(
             clearBudget: () =>
                 set({
                     clientId: null,
+                    clientLabel: "",
                     bikeId: null,
                     selectedServices: [],
                     selectedBikeparts: [],
@@ -109,6 +122,9 @@ export const useBudgetStore = create(
         }),
         {
             name: "budget-storage",
+            version: 1,
+            // Borradores guardados con el formato anterior (repuestos sin copia) se descartan
+            migrate: () => ({}),
         }
     )
 );

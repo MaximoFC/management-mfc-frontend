@@ -1,11 +1,12 @@
+import { LoadingDots } from "./ui-primitives";
 import { useState } from "react";
 import Modal from "../components/Modal";
 import { useInventoryStore } from "../store/useInventoryStore";
 import { addBike as addBikeService } from "../services/bikeService";
 
-const initialForm = { brand: "", model: "", color: "" };
+const initialForm = { brand: "", model: "", color: "", serialNumber: "" };
 
-export default function ClientBikesModal({ client, closeModal }) {
+export default function ClientBikesModal({ client, closeModal, onBikeAdded }) {
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -20,6 +21,7 @@ export default function ClientBikesModal({ client, closeModal }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     setMsg(null);
 
@@ -32,11 +34,12 @@ export default function ClientBikesModal({ client, closeModal }) {
 
       // Agregar bicicleta a la store
       addBikeToClientStore(client._id, newBike);
+      onBikeAdded?.(newBike);
 
       setForm(initialForm);
       setMsg({ type: "success", text: "Bicicleta agregada" });
-    } catch {
-      setMsg({ type: "error", text: "Error al agregar la bicicleta." });
+    } catch (err) {
+      setMsg({ type: "error", text: err?.error || "Error al agregar la bicicleta." });
     }
 
     setLoading(false);
@@ -63,8 +66,10 @@ export default function ClientBikesModal({ client, closeModal }) {
                   <div className="font-medium">
                     {b.brand} {b.model}
                   </div>
-                  <div className="text-gray-500 text-sm">Color: {b.color}</div>
-                  <div className="text-xs text-gray-400">ID: {b._id}</div>
+                  <div className="text-gray-500 text-sm">Color: {b.color || "-"}</div>
+                  <div className="text-xs text-gray-400">
+                    {b.serialNumber ? `N° de serie: ${b.serialNumber}` : "Sin número de serie"}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -102,14 +107,22 @@ export default function ClientBikesModal({ client, closeModal }) {
               required
               className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
             />
+            <input
+              type="text"
+              name="serialNumber"
+              placeholder="Número de serie (opcional)"
+              value={form.serialNumber}
+              onChange={handleChange}
+              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
 
             <div className="flex flex-col sm:flex-row gap-3 mt-4">
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-semibold w-full sm:w-auto"
+                className="inline-flex min-w-[150px] items-center justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-semibold w-full sm:w-auto cursor-pointer disabled:cursor-wait disabled:opacity-80"
               >
-                {loading ? "Agregando..." : "Agregar bicicleta"}
+                {loading ? <LoadingDots /> : "Agregar bicicleta"}
               </button>
 
               <button
