@@ -21,6 +21,7 @@ import { toast } from "react-toastify";
 import { confirmToast } from "../components/ConfirmToast";
 import { useInventoryStore } from "../store/useInventoryStore";
 import ImportPricesModal from "../components/ImportPricesModal";
+import Pagination from "../components/Pagination";
 
 const StockList = () => {
   const {
@@ -221,8 +222,6 @@ const StockList = () => {
   };
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const startItem = filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-  const endItem = Math.min(currentPage * itemsPerPage, filtered.length);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -241,7 +240,7 @@ const StockList = () => {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="grid grid-cols-2 sm:flex gap-3">
             <button
               onClick={() => setImportModalOpen(true)}
               className="h-11 px-4 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center gap-2 font-medium text-gray-700 cursor-pointer"
@@ -260,42 +259,24 @@ const StockList = () => {
           </div>
         </div>
 
-        {/* --- STATS --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Stock bajo</p>
-              <p className="mt-2 text-2xl font-bold text-orange-500">{lowStock}</p>
-              <p className="mt-1 text-xs text-gray-500">Requieren reposición</p>
+        {/* --- STATS --- (en celular, tres tarjetas compactas en una fila) */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-5">
+          {[
+            { title: "Stock bajo", value: lowStock, subtitle: "Requieren reposición", color: "text-orange-500", bg: "bg-orange-100", icon: <HiOutlineExclamationTriangle className="w-6 h-6" /> },
+            { title: "Sin stock", value: withoutStock, subtitle: "Agotados", color: "text-red-600", bg: "bg-red-100", icon: <BsBoxSeam className="w-5 h-5" /> },
+            { title: "Valor total", value: `$${totalInventoryARS.toLocaleString("es-AR")}`, subtitle: "Inventario actual", color: "text-green-600", bg: "bg-green-100", icon: <MdAttachMoney className="w-6 h-6" /> },
+          ].map((stat) => (
+            <div key={stat.title} className="min-w-0 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-6 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-500">{stat.title}</p>
+                <p className={`mt-1 sm:mt-2 text-base sm:text-2xl font-bold break-words ${stat.color}`}>{stat.value}</p>
+                <p className="mt-1 hidden sm:block text-xs text-gray-500">{stat.subtitle}</p>
+              </div>
+              <div className={`hidden lg:flex w-14 h-14 shrink-0 rounded-2xl items-center justify-center ${stat.bg} ${stat.color}`}>
+                {stat.icon}
+              </div>
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-orange-100 text-orange-500 flex items-center justify-center">
-              <HiOutlineExclamationTriangle className="w-6 h-6" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Sin stock</p>
-              <p className="mt-2 text-2xl font-bold text-red-600">{withoutStock}</p>
-              <p className="mt-1 text-xs text-gray-500">Agotados</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-500 flex items-center justify-center">
-              <BsBoxSeam className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Valor total</p>
-              <p className="mt-2 text-2xl font-bold text-green-600">
-                ${totalInventoryARS.toLocaleString("es-AR")}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">Inventario actual</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center">
-              <MdAttachMoney className="w-6 h-6" />
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Filters */}
@@ -305,6 +286,7 @@ const StockList = () => {
             <input
               type="text"
               placeholder="Buscar por código, marca o descripción..."
+              aria-label="Buscar repuesto"
               className="w-full h-12 rounded-xl border border-gray-300 bg-white pl-11 pr-4 outline-none focus:ring-2 focus:ring-gray-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -312,7 +294,8 @@ const StockList = () => {
           </div>
 
           <select
-            className="h-12 min-w-[200px] rounded-xl border border-gray-300 bg-white px-4 text-gray-700 outline-none cursor-pointer"
+            aria-label="Filtrar por tipo"
+            className="h-12 w-full lg:w-auto lg:min-w-[200px] rounded-xl border border-gray-300 bg-white px-4 text-gray-700 outline-none cursor-pointer"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
@@ -325,9 +308,9 @@ const StockList = () => {
           </select>
         </div>
 
-        {/* Tabla */}
+        {/* Listado: tabla en escritorio, tarjetas en celular */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="w-full">
+          <div className="hidden md:block w-full">
             <table className="w-full table-fixed">
               <thead className="bg-white border-b border-gray-200">
                 <tr className="text-left text-sm font-semibold text-gray-700">
@@ -425,39 +408,69 @@ const StockList = () => {
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* Pagination */}
-        <div className="flex flex-col gap-3 px-6 py-5 border-t border-gray-200 bg-white sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-gray-500">
-            Mostrando <span className="font-semibold text-gray-800">{filtered.length === 0 ? 0 : startItem}</span> a{" "}
-            <span className="font-semibold text-gray-800">{endItem}</span> de{" "}
-            <span className="font-semibold text-gray-800">{filtered.length}</span> repuestos
-          </p>
+          <ul className="md:hidden divide-y divide-gray-100">
+            {paginated.map((r) => {
+              const status = getStatusConfig(r.stock);
+              return (
+                <li key={r._id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 break-words">{r.description}</p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {r.code} · {r.brand}
+                      </p>
+                    </div>
+                    <p className="shrink-0 font-semibold text-gray-900">{formatPrice(getPrice(r), getCurrency(r))}</p>
+                  </div>
 
-          <div className="flex items-center gap-3 self-end sm:self-auto">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <span className="text-lg leading-none">‹</span>
-              Anterior
-            </button>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {r.type && (
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+                        {r.type}
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}>
+                      {status.label} · {r.stock} u.
+                    </span>
+                  </div>
 
-            <span className="text-sm font-medium text-gray-800 min-w-fit">
-              {currentPage} de {totalPages}
-            </span>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => openModal("update", r)}
+                      className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <FaRegEdit className="w-4 h-4" /> Editar
+                    </button>
+                    <button
+                      onClick={() => openModal("stock", r)}
+                      className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <IoMdAddCircleOutline className="w-4 h-4" /> Reponer
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r._id)}
+                      className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-red-200 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
+                    >
+                      <AiOutlineDelete className="w-4 h-4" /> Borrar
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+            {paginated.length === 0 && (
+              <li className="px-6 py-12 text-center text-gray-500">No se encontraron repuestos para los filtros actuales.</li>
+            )}
+          </ul>
 
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              Siguiente
-              <span className="text-lg leading-none">›</span>
-            </button>
-          </div>
+          <Pagination
+            page={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            pageSize={itemsPerPage}
+            itemLabel="repuestos"
+            onChange={setCurrentPage}
+          />
         </div>
       </div>
 

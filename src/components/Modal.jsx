@@ -31,14 +31,14 @@ const Modal = ({
   const confirmDisabled = disableConfirm || loading;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-end sm:items-center sm:p-4 overflow-y-auto">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className="
-          bg-white rounded-2xl shadow-2xl w-[90vw] max-w-2xl relative flex flex-col
-          max-h-[calc(100vh-4rem)]
+          bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:w-[90vw] max-w-2xl relative flex flex-col
+          max-h-[92dvh] sm:max-h-[calc(100vh-4rem)]
         "
       >
         <button
@@ -52,7 +52,7 @@ const Modal = ({
         </button>
 
         {title && (
-          <div className="px-8 pt-8 pb-4 border-b border-gray-100 flex-shrink-0">
+          <div className="px-5 pt-6 pb-4 pr-12 sm:px-8 sm:pt-8 border-b border-gray-100 flex-shrink-0">
             <h2 id={titleId} className="text-xl font-semibold text-gray-800">
               {title}
             </h2>
@@ -61,8 +61,7 @@ const Modal = ({
 
         <div
           className="
-            px-8 py-6 flex-1 overflow-y-auto
-            max-h-[70vh]
+            px-5 py-5 sm:px-8 sm:py-6 flex-1 overflow-y-auto
             space-y-5
           "
           style={{ overscrollBehavior: "contain" }}
@@ -70,7 +69,8 @@ const Modal = ({
           {children}
         </div>
 
-        <div className="flex justify-end gap-3 px-8 py-5 border-t border-gray-100 bg-white flex-shrink-0 rounded-b-2xl">
+        {(showCancel || onConfirm) && (
+        <div className={`${showCancel && onConfirm ? "grid grid-cols-2" : "flex justify-end"} gap-3 px-5 py-4 sm:flex sm:justify-end sm:px-8 sm:py-5 border-t border-gray-100 bg-white flex-shrink-0 sm:rounded-b-2xl`}>
           {showCancel && (
             <button
               type="button"
@@ -97,6 +97,7 @@ const Modal = ({
             </button>
           )}
         </div>
+        )}
       </div>
     </div>
   );

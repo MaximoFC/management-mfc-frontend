@@ -131,41 +131,44 @@ const ClientDetail = () => {
 
   return (
     <Layout>
-      <div className="p-8 flex flex-col gap-4 max-w-4xl mx-auto">
-        <h2 className="text-2xl font-semibold">
+      <div className="flex flex-col gap-4 max-w-4xl mx-auto md:p-4">
+        <div className="grid gap-3 sm:grid-cols-2">
           <input
-            className="text-xl font-bold border-b border-gray-400 focus:outline-none focus:border-red-500"
+            aria-label="Nombre"
+            className="min-w-0 text-xl font-bold border-b border-gray-400 bg-transparent focus:outline-none focus:border-red-500"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
-          />{" "}
+          />
           <input
-            className="text-xl font-bold border-b border-gray-400 focus:outline-none focus:border-red-500"
+            aria-label="Apellido"
+            className="min-w-0 text-xl font-bold border-b border-gray-400 bg-transparent focus:outline-none focus:border-red-500"
             value={editSurname}
             onChange={(e) => setEditSurname(e.target.value)}
           />
-        </h2>
-        <p>
-          Teléfono:{" "}
+        </div>
+        <label className="flex items-center gap-2">
+          <span className="text-gray-600">Teléfono:</span>
           <input
-            className="border-b border-gray-400 focus:outline-none focus:border-red-500"
+            type="tel"
+            className="min-w-0 flex-1 border-b border-gray-400 bg-transparent focus:outline-none focus:border-red-500"
             value={editMobileNum}
             onChange={(e) => setEditMobileNum(e.target.value)}
           />
-        </p>
+        </label>
 
         <button
-          className="bg-red-500 hover:bg-red-700 text-white p-2 px-4 rounded-md cursor-pointer mt-6"
+          className="h-11 w-full sm:w-fit inline-flex items-center justify-center bg-red-500 hover:bg-red-700 text-white px-4 rounded-xl cursor-pointer mt-4"
           onClick={handleSaveChanges}
           disabled={saving}
         >
           {saving ? <LoadingDots /> : "Guardar cambios"}
         </button>
 
-        <div className="mt-6 flex justify-between items-center">
+        <div className="mt-6 flex justify-between items-center gap-3">
           <h3 className="text-xl font-semibold">Bicicletas</h3>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-red-500 hover:bg-red-700 text-white p-2 px-4 rounded-md cursor-pointer"
+            className="h-10 shrink-0 bg-red-500 hover:bg-red-700 text-white px-4 rounded-xl cursor-pointer"
           >
             + Agregar bicicleta
           </button>
@@ -190,7 +193,7 @@ const ClientDetail = () => {
                     setCurrentPage(1);
                   }
                 }}
-                className={`relative flex flex-col items-start p-4 rounded-lg shadow-md border w-56 text-left transition cursor-pointer ${
+                className={`relative flex flex-col items-start p-4 rounded-lg shadow-md border bg-white w-full sm:w-56 text-left transition cursor-pointer ${
                   selectedBike === bike._id
                     ? "border-b-2 border-red-500 font-semibold"
                     : "text-gray-600"
