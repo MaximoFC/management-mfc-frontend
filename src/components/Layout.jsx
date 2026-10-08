@@ -20,7 +20,7 @@ const Layout = ({ children }) => {
           onClick={() => setSidebarOpen(false)}
         >
           <div
-            className="w-64 h-full bg-black text-white"
+            className="w-72 max-w-[85vw] h-full overflow-y-auto bg-black text-white"
             onClick={(e) => e.stopPropagation()}
           >
             <Sidebar />
@@ -29,15 +29,15 @@ const Layout = ({ children }) => {
       )}
 
       {/* Content */}
-      <div className="flex flex-col flex-1">
+      <div className="flex min-w-0 flex-col flex-1">
 
         {/* Navbar */}
-        <header className="h-20 bg-white border-b border-gray-200 flex items-center px-4 md:px-6">
+        <header className="sticky top-0 z-30 h-16 md:h-20 bg-white border-b border-gray-200 flex items-center px-2 md:px-6">
           <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         </header>
 
         {/* Main */}
-        <main className="flex-1 p-4 md:p-6 overflow-x-auto overflow-y-auto">
+        <main className="flex-1 min-w-0 p-4 md:p-6">
           {children}
         </main>
 

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import Pagination from "../components/Pagination";
+import { LoadingDots } from "../components/ui-primitives";
 import Layout from "../components/Layout";
 import { useGlobalSearch } from "../context/SearchContext";
 import NewClient from "./NewClient";
@@ -8,6 +10,7 @@ import {
   FiUsers,
   FiUserPlus,
   FiPhone,
+  FiChevronRight,
 } from "react-icons/fi";
 import { FaBicycle } from "react-icons/fa";
 
@@ -19,7 +22,6 @@ const ClientList = () => {
   const [showModal, setShowModal] = useState(false);
   const itemsPerPage = 10;
 
-  const navigate = useNavigate();
 
   // --- Inicializar bootstrap ---
   useEffect(() => {
@@ -52,208 +54,137 @@ const ClientList = () => {
     currentPage * itemsPerPage
   );
 
+  const totalPages = Math.max(1, Math.ceil(filteredClients.length / itemsPerPage));
+
+  const stats = [
+    { title: "Clientes", value: clients.length, subtitle: "Registrados en el sistema", color: "text-gray-900", bg: "bg-red-100 text-red-500", icon: <FiUsers /> },
+    { title: "Bicicletas", value: totalBikes, subtitle: "En el registro", color: "text-blue-500", bg: "bg-blue-100 text-blue-500", icon: <FaBicycle /> },
+    { title: "Nuevos", value: recentClients, subtitle: "Últimos 30 días", color: "text-green-600", bg: "bg-green-100 text-green-600", icon: <FiUserPlus /> },
+  ];
+
+  const bikesSummary = (c) =>
+    c.bikes.length === 0 ? (
+      <span className="text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500">Sin bicicletas</span>
+    ) : c.bikes.length === 1 ? (
+      <span className="flex min-w-0 items-center gap-2 text-sm text-gray-700">
+        <FaBicycle className="shrink-0 text-blue-500 text-sm" />
+        <span className="truncate">{c.bikes[0].brand} {c.bikes[0].model}</span>
+      </span>
+    ) : (
+      <span className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-600 font-medium">
+        <FaBicycle className="text-xs" />
+        {c.bikes.length} bicicletas
+      </span>
+    );
+
   return (
     <Layout>
-      <div className="flex flex-col gap-6 min-h-screen">
-
+      <div className="flex flex-col gap-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Clientes</h1>
-            <p className="text-gray-500 text-sm">
-              Gestiona tu cartera de clientes
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
+            <p className="mt-1 text-gray-500">Gestiona tu cartera de clientes</p>
           </div>
 
           <button
             onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-[#D90429] to-[#EF233C] text-white px-5 py-2 rounded-lg font-medium shadow-sm cursor-pointer hover:from-[#EF233C] hover:to-[#D90429]"
+            className="h-11 w-full sm:w-auto px-5 rounded-xl bg-gradient-to-r from-[#D90429] to-[#EF233C] hover:from-[#EF233C] hover:to-[#D90429] text-white font-medium cursor-pointer flex items-center justify-center gap-2"
           >
-            + Nuevo Cliente
+            <FiUserPlus className="w-4 h-4" />
+            Nuevo cliente
           </button>
         </div>
 
-        <NewClient
-          showModal={showModal}
-          onClose={() => setShowModal(false)}
-        />
+        <NewClient showModal={showModal} onClose={() => setShowModal(false)} />
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-          {/* Clientes */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center">
-              <FiUsers className="text-red-500 text-lg" />
+        {/* Stats: en celular, tres tarjetas compactas en una fila */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-5">
+          {stats.map((stat) => (
+            <div key={stat.title} className="min-w-0 bg-white rounded-2xl border border-gray-200 p-3 sm:p-5 shadow-sm flex items-center gap-4">
+              <div className={`hidden sm:flex w-11 h-11 shrink-0 rounded-xl items-center justify-center text-lg ${stat.bg}`}>
+                {stat.icon}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-500">{stat.title}</p>
+                <p className={`text-xl sm:text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="hidden sm:block text-xs text-gray-400">{stat.subtitle}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Clientes Totales</p>
-              <p className="text-2xl font-bold">{clients.length}</p>
-              <p className="text-xs text-gray-400">
-                Registrados en el sistema
-              </p>
-            </div>
-          </div>
-
-          {/* Bicicletas */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center">
-              <FaBicycle className="text-blue-500 text-lg" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Bicicletas Totales</p>
-              <p className="text-2xl font-bold text-blue-500">
-                {totalBikes}
-              </p>
-              <p className="text-xs text-gray-400">En el registro</p>
-            </div>
-          </div>
-
-          {/* Nuevos */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center">
-              <FiUserPlus className="text-green-600 text-lg" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Nuevos Clientes</p>
-              <p className="text-2xl font-bold text-green-600">
-                {recentClients}
-              </p>
-              <p className="text-xs text-gray-400">
-                Últimos 30 días
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Tabla */}
+        {/* Listado */}
         {loadingBootstrap ? (
-          <div>Cargando...</div>
+          <div className="flex justify-center py-12 text-[#D90429]">
+            <LoadingDots />
+          </div>
         ) : clients.length === 0 ? (
-          <div>No hay clientes registrados.</div>
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center text-gray-500">
+            No hay clientes registrados.
+          </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-
-            {/* Header */}
-            <div className="grid grid-cols-3 px-6 py-4 text-xs font-semibold text-gray-400 border-b border-gray-100">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* Encabezado de columnas: solo en pantallas medianas o más */}
+            <div className="hidden md:grid grid-cols-3 px-6 py-4 text-xs font-semibold text-gray-400 border-b border-gray-100">
               <span>CLIENTE</span>
               <span>TELÉFONO</span>
               <span>BICICLETAS</span>
             </div>
 
-            {/* Filas */}
-            {paginatedClients.map((c) => {
-              const initials = `${c.name[0]}${c.surname[0]}`;
-
-              return (
-                <div
-                  key={c._id}
-                  onClick={() => navigate(`/clientes/${c._id}`)}
-                  className="grid grid-cols-3 items-center px-6 py-4 transition-all duration-150 hover:bg-gray-50 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04)] cursor-pointer"
-                >
-                  {/* Cliente */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center font-semibold">
-                      {initials}
-                    </div>
-                    <div>
-                      <p className="font-medium">
-                        {c.name} {c.surname}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Teléfono */}
-                  <div className="flex items-center gap-2 text-gray-700 text-sm">
-                    <FiPhone className="text-gray-400 text-sm" />
-                    {c.mobileNum}
-                  </div>
-
-                  {/* Bicicletas */}
-                  <div>
-                    {c.bikes.length === 0 ? (
-                      <span className="text-xs px-3 py-1 rounded-full border text-gray-500">
-                        Sin bicicletas
-                      </span>
-                    ) : c.bikes.length === 1 ? (
-                      <div className="flex items-center gap-2 text-sm text-gray-700">
-                        <FaBicycle className="text-blue-500 text-sm" />
-                        {c.bikes[0].brand} {c.bikes[0].model}
+            <ul className="divide-y divide-gray-100">
+              {paginatedClients.map((c) => {
+                const initials = `${c.name?.[0] || ""}${c.surname?.[0] || ""}`.toUpperCase();
+                return (
+                  <li key={c._id}>
+                    <Link
+                      to={`/clientes/${c._id}`}
+                      className="flex items-center gap-3 px-4 py-4 sm:px-6 hover:bg-gray-50 md:grid md:grid-cols-3"
+                    >
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="w-10 h-10 shrink-0 rounded-full bg-red-100 text-red-500 flex items-center justify-center font-semibold">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {c.name} {c.surname}
+                          </p>
+                          {/* En celular, teléfono y bicis debajo del nombre */}
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 md:hidden">
+                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                              <FiPhone className="text-gray-400" />
+                              {c.mobileNum}
+                            </span>
+                            {bikesSummary(c)}
+                          </div>
+                        </div>
                       </div>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-600 font-medium">
-                        <FaBicycle className="text-xs" />
-                        {c.bikes.length} bicicletas
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
 
-            {/* Paginación PRO */}
-            {(() => {
-              const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-              const startItem =
-                filteredClients.length === 0
-                  ? 0
-                  : (currentPage - 1) * itemsPerPage + 1;
-              const endItem = Math.min(
-                currentPage * itemsPerPage,
-                filteredClients.length
-              );
+                      <div className="hidden md:flex items-center gap-2 text-gray-700 text-sm">
+                        <FiPhone className="text-gray-400 text-sm" />
+                        {c.mobileNum}
+                      </div>
 
-              return (
-                <div className="flex flex-col gap-3 px-6 py-5 border-t border-gray-200 bg-white sm:flex-row sm:items-center sm:justify-between">
+                      <div className="hidden md:block">{bikesSummary(c)}</div>
 
-                  <p className="text-sm text-gray-500">
-                    Mostrando{" "}
-                    <span className="font-semibold text-gray-800">
-                      {startItem}
-                    </span>{" "}
-                    a{" "}
-                    <span className="font-semibold text-gray-800">
-                      {endItem}
-                    </span>{" "}
-                    de{" "}
-                    <span className="font-semibold text-gray-800">
-                      {filteredClients.length}
-                    </span>{" "}
-                    clientes
-                  </p>
+                      <FiChevronRight className="shrink-0 text-gray-300 md:hidden" />
+                    </Link>
+                  </li>
+                );
+              })}
+              {paginatedClients.length === 0 && (
+                <li className="px-6 py-12 text-center text-gray-500">No hay clientes que coincidan con la búsqueda.</li>
+              )}
+            </ul>
 
-                  <div className="flex items-center gap-3 self-end sm:self-auto">
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      disabled={currentPage === 1}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                      <span className="text-lg">‹</span>
-                      Anterior
-                    </button>
-
-                    <span className="text-sm font-medium text-gray-800">
-                      {currentPage} de {totalPages}
-                    </span>
-
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) =>
-                          Math.min(prev + 1, totalPages)
-                        )
-                      }
-                      disabled={currentPage === totalPages}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                      Siguiente
-                      <span className="text-lg">›</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })()}
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredClients.length}
+              pageSize={itemsPerPage}
+              itemLabel="clientes"
+              onChange={setCurrentPage}
+            />
           </div>
         )}
       </div>

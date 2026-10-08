@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { getBalance, getFlows, createFlow, getFlowSummary } from "../services/cashService";
 import { isoDateAR, daysAgoISO } from "../utils/dates";
 import { LoadingDots } from "../components/ui-primitives";
+import Pagination from "../components/Pagination";
 import { TfiStatsUp, TfiStatsDown } from "react-icons/tfi";
 import { FiPlus, FiArrowUpRight, FiArrowDownLeft, FiSearch } from "react-icons/fi";
 
@@ -149,9 +150,6 @@ const Cash = () => {
     }
   };
 
-  const firstItem = flows.total === 0 ? 0 : (flows.page - 1) * PAGE_SIZE + 1;
-  const lastItem = (flows.page - 1) * PAGE_SIZE + flows.items.length;
-
   return (
     <Layout>
       <div className="flex flex-col gap-6">
@@ -163,7 +161,7 @@ const Cash = () => {
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#D90429] to-[#EF233C] px-5 font-medium text-white hover:from-[#EF233C] hover:to-[#D90429]"
+            className="flex h-11 w-full sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#D90429] to-[#EF233C] px-5 font-medium text-white hover:from-[#EF233C] hover:to-[#D90429]"
           >
             <FiPlus className="h-4 w-4" />
             Agregar movimiento
@@ -171,9 +169,9 @@ const Cash = () => {
         </div>
 
         {/* Saldo */}
-        <div className="rounded-2xl bg-gradient-to-r from-[#D90429] to-[#EF233C] px-6 py-8 text-white shadow-sm">
+        <div className="rounded-2xl bg-gradient-to-r from-[#D90429] to-[#EF233C] px-5 py-6 sm:px-6 sm:py-8 text-white shadow-sm">
           <p className="text-sm opacity-90">Dinero actual en caja</p>
-          <h2 className="mt-2 text-4xl font-bold">{formatCurrency(balance)}</h2>
+          <h2 className="mt-2 text-3xl sm:text-4xl font-bold break-words">{formatCurrency(balance)}</h2>
           <div className="mt-4 flex flex-wrap gap-6 text-sm">
             <p className="flex items-center gap-2">
               <TfiStatsUp /> Hoy + {formatCurrency(summary.today.ingresos)}
@@ -253,24 +251,24 @@ const Cash = () => {
             </div>
 
             {/* Totales del rango */}
-            <div className="grid grid-cols-3 gap-3 rounded-xl bg-gray-50 p-4 text-sm">
-              <div>
-                <p className="text-gray-500">Ingresos del período</p>
+            <div className="grid grid-cols-3 gap-3 rounded-xl bg-gray-50 p-3 sm:p-4 text-xs sm:text-sm">
+              <div className="min-w-0">
+                <p className="text-gray-500">Ingresos<span className="hidden sm:inline"> del período</span></p>
                 <p className="font-semibold text-emerald-600">+ {formatCurrency(flows.totals.ingresos)}</p>
               </div>
-              <div>
-                <p className="text-gray-500">Egresos del período</p>
+              <div className="min-w-0">
+                <p className="text-gray-500">Egresos<span className="hidden sm:inline"> del período</span></p>
                 <p className="font-semibold text-red-500">- {formatCurrency(flows.totals.egresos)}</p>
               </div>
-              <div>
-                <p className="text-gray-500">Balance del período</p>
+              <div className="min-w-0">
+                <p className="text-gray-500">Balance<span className="hidden sm:inline"> del período</span></p>
                 <p className="font-bold text-gray-900">{formatCurrency(flows.totals.balance)}</p>
               </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px]">
+          <div className="hidden md:block">
+            <table className="w-full">
               <thead className="border-b border-gray-200">
                 <tr className="text-left text-sm font-semibold text-gray-700">
                   <th className="px-5 py-4">Tipo</th>
@@ -323,36 +321,50 @@ const Cash = () => {
             </table>
           </div>
 
-          {flows.total > 0 && (
-            <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-gray-500">
-                Mostrando <span className="font-semibold text-gray-800">{firstItem}</span> a{" "}
-                <span className="font-semibold text-gray-800">{lastItem}</span> de{" "}
-                <span className="font-semibold text-gray-800">{flows.total}</span> movimientos
-              </p>
-              <div className="flex items-center gap-3 self-end sm:self-auto">
-                <button
-                  onClick={() => loadFlows(appliedRange[0], appliedRange[1], flows.page - 1)}
-                  disabled={flows.page <= 1 || loadingFlows}
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <span className="text-lg leading-none">‹</span>
-                  Anterior
-                </button>
-                <span className="text-sm font-medium text-gray-800">
-                  {flows.page} de {flows.pages}
-                </span>
-                <button
-                  onClick={() => loadFlows(appliedRange[0], appliedRange[1], flows.page + 1)}
-                  disabled={flows.page >= flows.pages || loadingFlows}
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Siguiente
-                  <span className="text-lg leading-none">›</span>
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Celular: una fila compacta por movimiento */}
+          <ul className="divide-y divide-gray-100 md:hidden">
+            {loadingFlows && (
+              <li className="flex justify-center px-6 py-10">
+                <ClipLoader size={24} color="#D90429" />
+              </li>
+            )}
+            {!loadingFlows &&
+              flows.items.map((mov) => {
+                const isIncome = mov.type === "ingreso";
+                return (
+                  <li key={mov._id} className="flex items-start gap-3 px-4 py-3">
+                    <span
+                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                        isIncome ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"
+                      }`}
+                      aria-label={isIncome ? "Ingreso" : "Egreso"}
+                    >
+                      {isIncome ? <FiArrowUpRight /> : <FiArrowDownLeft />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-gray-900 break-words">{mov.description}</p>
+                      <p className="text-xs text-gray-500">{formatDateTime(mov.date)}</p>
+                    </div>
+                    <p className={`shrink-0 text-sm font-semibold ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
+                      {isIncome ? "+" : "-"} {formatCurrency(mov.amount)}
+                    </p>
+                  </li>
+                );
+              })}
+            {!loadingFlows && flows.items.length === 0 && (
+              <li className="px-6 py-10 text-center text-sm text-gray-500">No hay movimientos en este período.</li>
+            )}
+          </ul>
+
+          <Pagination
+            page={flows.page}
+            totalPages={flows.pages}
+            totalItems={flows.total}
+            pageSize={PAGE_SIZE}
+            itemLabel="movimientos"
+            disabled={loadingFlows}
+            onChange={(page) => loadFlows(appliedRange[0], appliedRange[1], page)}
+          />
         </div>
 
         {showModal && (

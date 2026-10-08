@@ -73,7 +73,7 @@ const Navbar = ({ setSidebarOpen }) => {
   };
 
   return (
-    <nav className="flex items-center justify-between w-full h-20 px-4 md:px-6 gap-4">
+    <nav className="flex items-center justify-between w-full h-full px-2 md:px-0 gap-3 md:gap-4">
 
       {/* Left */}
       <div className="flex items-center gap-3 flex-1 md:flex-none">
@@ -151,7 +151,7 @@ const Navbar = ({ setSidebarOpen }) => {
       {/* Dropdown de notificaciones */}
       {showNotifications && (
         <div
-          className="absolute top-14 right-0 w-80 bg-white border border-gray-300 rounded-md shadow-md z-50 p-4"
+          className="absolute top-14 right-0 w-[calc(100vw-1.5rem)] max-w-80 bg-white border border-gray-300 rounded-md shadow-md z-50 p-4"
           ref={notificationRef}
         >
           <h4 className="text-lg font-semibold mb-2">Notificaciones</h4>

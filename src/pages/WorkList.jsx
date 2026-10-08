@@ -219,10 +219,13 @@ const WorkList = () => {
     const { source, destination, draggableId } = result;
     if (!destination || source.droppableId === destination.droppableId) return;
 
-    const from = source.droppableId;
-    const to = destination.droppableId;
-    const budget = columns[from].find((b) => b._id === draggableId);
-    if (!budget) return;
+    const budget = columns[source.droppableId].find((b) => b._id === draggableId);
+    if (budget) requestMove(budget, source.droppableId, destination.droppableId);
+  };
+
+  // Usado al arrastrar (escritorio) y desde el selector "Mover a…" (celular)
+  const requestMove = (budget, from, to) => {
+    if (movingId || from === to) return;
 
     if (STATES.indexOf(to) < STATES.indexOf(from)) {
       toast.warning("Un trabajo no puede volver a un estado anterior");
@@ -320,61 +323,63 @@ const WorkList = () => {
     <Layout>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900">
             Lista de Trabajos
           </h1>
 
           <p className="text-sm text-gray-500">
-            Gestiona el flujo de trabajos del taller arrastrando las tarjetas entre columnas
+            <span className="hidden md:inline">Gestiona el flujo de trabajos del taller arrastrando las tarjetas entre columnas</span>
+            <span className="md:hidden">Gestiona el flujo de trabajos del taller</span>
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-3 sm:gap-6">
 
           {/* Trabajos hoy */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex justify-between">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sm:p-5 flex min-w-0 justify-between gap-2">
             <div>
-              <p className="text-sm text-gray-500">Trabajos hoy</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-xs sm:text-sm text-gray-500">Trabajos hoy</p>
+              <p className="text-lg sm:text-2xl font-semibold break-words text-gray-900">
                 {stats.todayCount}
               </p>
-              <p className="text-xs text-gray-400 mt-1">Ingresados en las últimas 24h</p>
+              <p className="hidden sm:block text-xs text-gray-400 mt-1">Ingresados en las últimas 24h</p>
             </div>
-            <div className="bg-gray-100 p-2 rounded-lg h-10 w-10 flex items-center justify-center">
+            <div className="bg-gray-100 p-2 rounded-lg h-10 w-10 shrink-0 hidden lg:flex items-center justify-center">
               <FiClock className="text-gray-500" />
             </div>
           </div>
 
           {/* Pendientes */}
-          <div className="bg-red-50 border border-red-200 rounded-xl shadow-sm p-5 flex justify-between">
+          <div className="bg-red-50 border border-red-200 rounded-xl shadow-sm p-3 sm:p-5 flex min-w-0 justify-between gap-2">
             <div>
-              <p className="text-sm text-gray-600">Pendientes de retiro</p>
-              <p className="text-2xl font-semibold text-red-600">
+              <p className="text-xs sm:text-sm text-gray-600">Pendientes de retiro</p>
+              <p className="text-lg sm:text-2xl font-semibold break-words text-red-600">
                 {stats.pendingPickup}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Contando estadía</p>
+              <p className="hidden sm:block text-xs text-gray-500 mt-1">Contando estadía</p>
             </div>
-            <div className="bg-red-100 p-2 rounded-lg h-10 w-10 flex items-center justify-center">
+            <div className="bg-red-100 p-2 rounded-lg h-10 w-10 shrink-0 hidden lg:flex items-center justify-center">
               <FiPackage className="text-red-500" />
             </div>
           </div>
 
           {/* Por cobrar */}
-          <div className="bg-green-50 border border-green-200 rounded-xl shadow-sm p-5 flex justify-between">
+          <div className="bg-green-50 border border-green-200 rounded-xl shadow-sm p-3 sm:p-5 flex min-w-0 justify-between gap-2">
             <div>
-              <p className="text-sm text-gray-600">Por cobrar</p>
-              <p className="text-2xl font-semibold text-green-600">
+              <p className="text-xs sm:text-sm text-gray-600">Por cobrar</p>
+              <p className="text-lg sm:text-2xl font-semibold break-words text-green-600">
                 ${stats.toCharge.toLocaleString("es-AR")}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Trabajos terminados</p>
+              <p className="hidden sm:block text-xs text-gray-500 mt-1">Trabajos terminados</p>
             </div>
-            <div className="bg-green-100 p-2 rounded-lg h-10 w-10 flex items-center justify-center">
+            <div className="bg-green-100 p-2 rounded-lg h-10 w-10 shrink-0 hidden lg:flex items-center justify-center">
               <FiDollarSign className="text-green-600" />
             </div>
           </div>
 
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 py-4">
+        <p className="text-xs text-gray-500 md:hidden">Deslizá para ver las columnas. Usá “Mover a…” en cada trabajo para cambiar su estado.</p>
+        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-2 md:gap-6 md:overflow-visible md:px-0 md:py-4 xl:grid-cols-4">
           <DragDropContext onDragEnd={onDragEnd}>
             {STATES.filter((s) => s !== "retirado").map((state) => (
               <Droppable key={state} droppableId={state}>
@@ -382,7 +387,7 @@ const WorkList = () => {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`rounded-xl p-4 w-full shadow-sm flex flex-col border ${STATE_COLORS[state]}`}
+                    className={`w-[85vw] max-w-sm shrink-0 snap-start rounded-xl p-4 shadow-sm flex flex-col border md:w-full md:max-w-none ${STATE_COLORS[state]}`}
                   >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-black/5">
                       <h3 className="font-semibold text-sm">
@@ -460,7 +465,7 @@ const WorkList = () => {
                               </div>
 
                               {/* Footer */}
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between gap-3">
                                 <div>
                                   <p className="text-green-600 font-semibold">
                                     ${budget.total_ars?.toLocaleString("es-AR")}
@@ -472,6 +477,20 @@ const WorkList = () => {
                                     })}
                                   </p>
                                 </div>
+                                <select
+                                  aria-label="Mover trabajo a otro estado"
+                                  className="md:hidden h-9 rounded-lg border border-gray-300 bg-white px-2 text-xs text-gray-700"
+                                  value=""
+                                  disabled={!!movingId}
+                                  onChange={(e) => requestMove(budget, state, e.target.value)}
+                                >
+                                  <option value="">Mover a…</option>
+                                  {STATES.slice(STATES.indexOf(state) + 1).map((next) => (
+                                    <option key={next} value={next}>
+                                      {STATE_LABELS[next]}
+                                    </option>
+                                  ))}
+                                </select>
                               </div>
 
                               {/* Buttons */}
@@ -479,7 +498,7 @@ const WorkList = () => {
                                 <button
                                   onClick={() => handlePrintTicket(budget)}
                                   disabled={!!printing}
-                                  className="flex h-8 items-center justify-center gap-1 flex-1 bg-gradient-to-r from-[#D90429] to-[#EF233C] hover:from-[#EF233C] hover:to-[#D90429] text-white text-xs rounded-lg cursor-pointer disabled:cursor-wait disabled:opacity-80"
+                                  className="flex h-10 md:h-8 items-center justify-center gap-1 flex-1 bg-gradient-to-r from-[#D90429] to-[#EF233C] hover:from-[#EF233C] hover:to-[#D90429] text-white text-xs rounded-lg cursor-pointer disabled:cursor-wait disabled:opacity-80"
                                 >
                                   {printing === `${budget._id}-ticket` ? <LoadingDots /> : <><FiPrinter size={14} /> Ticket</>}
                                 </button>
@@ -487,7 +506,7 @@ const WorkList = () => {
                                 <button
                                   onClick={() => handlePrintForm(budget)}
                                   disabled={!!printing}
-                                  className="flex h-8 items-center justify-center gap-1 flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded-lg cursor-pointer disabled:cursor-wait disabled:opacity-80"
+                                  className="flex h-10 md:h-8 items-center justify-center gap-1 flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded-lg cursor-pointer disabled:cursor-wait disabled:opacity-80"
                                 >
                                   {printing === `${budget._id}-form` ? <LoadingDots /> : <><FiFileText size={14} /> Formulario</>}
                                 </button>
@@ -509,7 +528,7 @@ const WorkList = () => {
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`flex items-center justify-center 
+                  className={`hidden md:flex items-center justify-center 
                   w-12 min-w-[48px] h-40 self-start 
                   rounded-md border-2 border-dashed
                   ${

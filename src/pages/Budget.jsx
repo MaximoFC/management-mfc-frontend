@@ -598,7 +598,7 @@ const Budget = () => {
           </Card>
 
           {/* Presupuesto actual */}
-          <Card className="h-fit lg:sticky lg:top-6 lg:col-span-2">
+          <Card className="h-fit lg:sticky lg:top-24 lg:col-span-2">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <FiFileText className="text-red-600" />
@@ -615,7 +615,7 @@ const Budget = () => {
 
                 {selectedServices.map((s) => (
                   <div key={s._id} className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 p-3">
-                    <div className="min-w-0">
+                    <div className="min-w-0 break-words">
                       <p className="font-medium text-gray-900">{s.name}</p>
                       <p className="text-xs text-gray-500">Servicio</p>
                     </div>
@@ -636,8 +636,8 @@ const Budget = () => {
                 {selectedBikeparts.map((bp) => {
                   const part = findPart(bp.bikepart_id) || {};
                   return (
-                    <div key={bp.bikepart_id} className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 p-3">
-                      <div className="min-w-0">
+                    <div key={bp.bikepart_id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 p-3">
+                      <div className="min-w-0 flex-1 basis-40">
                         <p className="font-medium text-gray-900">{part.description}</p>
                         <p className="text-xs text-gray-500">
                           {formatPartPrice(part)} c/u · stock {part.stock}

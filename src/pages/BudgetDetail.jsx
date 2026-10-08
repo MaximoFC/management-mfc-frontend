@@ -84,16 +84,16 @@ const BudgetDetail = () => {
           <p className="mt-1 text-gray-500">Creado el {formatDate(budget.creation_date)}</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-4">
           {[
             ["Cliente", owner ? `${owner.name} ${owner.surname}` : "-", owner?.mobileNum],
             ["Bicicleta", bikeLabel(budget.bike_id)],
             ["Estado", budget.state],
             ["Total", formatARS(budget.total_ars), budget.total_usd ? `Incluye USD ${budget.total_usd}` : null],
           ].map(([title, value, subtitle]) => (
-            <div key={title} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div key={title} className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
               <p className="text-sm text-gray-500">{title}</p>
-              <p className="mt-2 text-xl font-bold capitalize text-gray-900">{value}</p>
+              <p className="mt-2 text-base font-bold capitalize text-gray-900 break-words sm:text-xl">{value}</p>
               {subtitle && <p className="mt-1 text-xs text-gray-500">{subtitle}</p>}
             </div>
           ))}

@@ -20,13 +20,13 @@ const checkupStatus = (date) => {
 };
 
 const StatCard = ({ title, value, subtitle, icon, accent }) => (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div>
-            <p className="text-sm text-gray-500">{title}</p>
-            <p className={`mt-2 text-2xl font-bold ${accent}`}>{value}</p>
-            <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
+    <div className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-6">
+        <div className="min-w-0">
+            <p className="text-xs text-gray-500 sm:text-sm">{title}</p>
+            <p className={`mt-1 text-xl font-bold sm:mt-2 sm:text-2xl ${accent}`}>{value}</p>
+            <p className="mt-1 hidden text-xs text-gray-500 sm:block">{subtitle}</p>
         </div>
-        <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${icon.bg} ${accent}`}>{icon.node}</div>
+        <div className={`hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl lg:flex ${icon.bg} ${accent}`}>{icon.node}</div>
     </div>
 );
 
@@ -86,7 +86,7 @@ const Warranties = () => {
                     <p className="mt-1 text-gray-500">Servicios con garantía vigente y sus próximas revisiones</p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                <div className="grid grid-cols-3 gap-3 sm:gap-5">
                     <StatCard
                         title="Garantías vigentes"
                         value={rows.length}
@@ -122,8 +122,8 @@ const Warranties = () => {
                     />
                 </div>
 
-                <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
-                    <table className="w-full min-w-[800px]">
+                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <table className="hidden w-full lg:table">
                         <thead className="border-b border-gray-200">
                             <tr className="text-left text-sm font-semibold text-gray-700">
                                 <th className="px-4 py-4">Cliente</th>
@@ -188,6 +188,50 @@ const Warranties = () => {
                             )}
                         </tbody>
                     </table>
+
+                    {/* Celular y tablet: una tarjeta por garantía */}
+                    <ul className="divide-y divide-gray-100 lg:hidden">
+                        {loading && (
+                            <li className="flex justify-center px-6 py-12">
+                                <ClipLoader size={28} color="#D90429" />
+                            </li>
+                        )}
+                        {!loading &&
+                            filtered.map((r) => {
+                                const status = checkupStatus(r.nextCheckup);
+                                return (
+                                    <li key={r.key}>
+                                        <Link to={`/garantias/${r.budgetId}`} className="block p-4 hover:bg-gray-50">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-gray-900">{r.client}</p>
+                                                    <p className="text-sm text-gray-500 break-words">{r.bike}</p>
+                                                </div>
+                                                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}>
+                                                    {status.label}
+                                                </span>
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                                                <span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-700">{r.service}</span>
+                                                <span className="text-gray-500">
+                                                    Vigente hasta {formatDate(r.endDate)}
+                                                </span>
+                                            </div>
+                                            {r.nextCheckup && (
+                                                <p className="mt-2 text-xs text-gray-500">
+                                                    Próxima revisión: <span className="font-medium text-gray-800">{formatDate(r.nextCheckup)}</span>
+                                                </p>
+                                            )}
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                        {!loading && filtered.length === 0 && (
+                            <li className="px-6 py-12 text-center text-gray-500">
+                                {rows.length ? "No hay garantías que coincidan con la búsqueda." : "No hay garantías activas."}
+                            </li>
+                        )}
+                    </ul>
                 </div>
             </div>
         </Layout>
